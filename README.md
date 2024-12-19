@@ -1,4 +1,4 @@
-# İTÜ Blockchain Klübü Devs Komitesi 1. Proje  
+### İTÜ Blockchain Klübü Devs Komitesi 1. Proje  
 
 **Blockchain ağı üzerindeki swap işlemlerini ve pool mekanizmalarını simüle eden konsol uygulaması.**
 
