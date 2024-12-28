@@ -16,18 +16,16 @@ class AuthManager {
     // Gizli ifadeden özel ve genel anahtarların oluşturulması
     const privateKey = HashUtils.sha256(secretPhrase);
     const publicKey = HashUtils.sha256(privateKey);
-    
+
     // Genel anahtar ile cüzdan bilgilerinin getirilmesi
     const wallet = await walletService.getWalletByPublicKey(publicKey);
-    
+
     // Eğer cüzdan yoksa, yeni bir cüzdan oluşturulur
-    if (!wallet) {
+    if (!wallet)
       await walletService.addWallet({
         public_key: publicKey,
-        balances: 
-          { tokenA: 100, tokenB: 100 }
-        })
-    }
+        balances: { tokenA: 100, tokenB: 100 },
+      });
 
     // Giriş durumunun güncellenmesi ve cüzdan bilgilerinin saklanması
     this.loggedIn = true;

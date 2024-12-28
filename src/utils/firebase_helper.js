@@ -1,5 +1,14 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, query, where, doc, updateDoc, addDoc } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  where,
+  doc,
+  updateDoc,
+  addDoc,
+} from "firebase/firestore";
 import * as dotenv from "dotenv";
 
 // .env dosyasını yükle
@@ -39,11 +48,10 @@ async function fetchDocByQuery(collectionName, fieldName, value) {
   try {
     const collectionRef = collection(db, collectionName);
     const q = query(collectionRef, where(fieldName, "==", value));
+    // ABİ Q NE AMK??? -0xkutluer
     const snapshot = await getDocs(q);
 
-    if (snapshot.empty) {
-      return null;
-    }
+    if (snapshot.empty) return null;
 
     return {
       id: snapshot.docs[0].id, // Doküman ID
@@ -66,7 +74,6 @@ async function updateDocument(collectionName, docId, data) {
     return false;
   }
 }
-
 
 // Yeni doküman ekleme
 async function addDocument(collectionName, data) {
