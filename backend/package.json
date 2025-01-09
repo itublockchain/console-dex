@@ -1,0 +1,24 @@
+{
+  "name": "hardhat-project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "hardhat test",
+    "verify": "npx hardhat run scripts/UniswapV2_Deploy_and_verify.js --network holesky",
+    "deploy-local": "npx hardhat run scripts/deploy.js --network local",
+    "deploy-holesky": "npx hardhat run scripts/deploy.js --network holesky"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@types/chai": "^4.2.0",
+    "@types/mocha": "^10.0.6",
+    "chai": "^4.2.0",
+    "hardhat": "^2.19.4",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.1.0",
+    "dotenv": "^16.4.7"
+  }
+}
