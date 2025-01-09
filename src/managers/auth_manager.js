@@ -1,59 +1,73 @@
 // Gerekli servislerin ve yardımcı fonksiyonların import edilmesi
-import walletService from "../services/wallet_service.js";
-import HashUtils from "../utils/hash_utils.js";
+import WalletService from "../services/wallet_service.js";
+import { privateKeyToPublicKey } from "../../viem/utils/utils.js";
+import wrap from "../utils/wrap_async.js";
 
 // Kullanıcı kimlik doğrulama ve cüzdan yönetimi için AuthManager sınıfı
 class AuthManager {
   constructor() {
     // Başlangıç durumunda kullanıcı giriş yapmamış olarak ayarlanır
-    this.loggedIn = false;
-    this.currentWallet = null;
-    this.privateKey = null;
+    this.logged_in = false;
+    this.current_wallet = null;
+    this.encrypted_private_key = null;
   }
 
   // Kullanıcının gizli ifade ile giriş yapmasını sağlayan fonksiyon
-  async login(secretPhrase) {
+  async login(private_key, wallet_key) {
     // Gizli ifadeden özel ve genel anahtarların oluşturulması
-    const privateKey = HashUtils.sha256(secretPhrase);
-    const publicKey = HashUtils.sha256(privateKey);
+
+    const public_key = privateKeyToPublicKey(private_key);
 
     // Genel anahtar ile cüzdan bilgilerinin getirilmesi
-    const wallet = await walletService.getWalletByPublicKey(publicKey);
+    let wallet = await WalletService.getWalletByPublicKey(public_key);
 
     // Eğer cüzdan yoksa, yeni bir cüzdan oluşturulur
-    if (!wallet)
-      await walletService.addWallet({
-        public_key: publicKey,
-        balances: { tokenA: 100, tokenB: 100 },
-      });
+    if (!wallet) {
+      let [new_wallet, err] = await wrap(
+        WalletService.createWallet(private_key, wallet_key)
+      );
+      if (err) return;
+      wallet = new_wallet;
+    }
 
     // Giriş durumunun güncellenmesi ve cüzdan bilgilerinin saklanması
-    this.loggedIn = true;
-    this.currentWallet = publicKey;
-    this.privateKey = privateKey;
-    return this.loggedIn;
+    this.current_wallet = wallet.address;
+    this.encrypted_private_key = wallet.encrypted_private_key;
+
+    this.logged_in = true;
+    return this.logged_in;
   }
 
   // Kullanıcının çıkış yapmasını sağlayan fonksiyon
   disconnect() {
-    this.loggedIn = false;
-    this.currentWallet = null;
-    this.privateKey = null;
+    this.logged_in = false;
+    this.current_wallet = null;
+    this.encrypted_private_key = null;
   }
 
   // Kullanıcının giriş durumunu kontrol eden fonksiyon
   isLoggedIn() {
-    return this.loggedIn;
+    return this.logged_in;
   }
 
   // Mevcut cüzdan adresini döndüren fonksiyon
   getCurrentWallet() {
-    return this.currentWallet;
+    return this.current_wallet;
+  }
+
+  getWallets() {
+    return WalletService.getWallets();
   }
 
   // Özel anahtarı döndüren fonksiyon
-  getPrivateKey() {
-    return this.privateKey;
+  getPrivateKey(wallet_password) {
+    const [private_key, err] = wrap(
+      WalletService.getPrivateKey(this.public_key, wallet_password)
+    );
+
+    if (err) return console.log(chalk.red(err));
+
+    return private_key;
   }
 }
 

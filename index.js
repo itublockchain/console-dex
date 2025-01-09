@@ -3,6 +3,9 @@ import { Command } from "commander";
 import MainMenu from "./src/menus/main_menu.js";
 import wrap_async from "./src/utils/wrap_async.js";
 
+// Sadece uygulama açıkken tutulacak bir veri.
+export let wallet_passwords = [];
+
 // ConsoleDex Uygulamasını Başlatacak Komutlar...
 const ConsoleDex = new Command();
 

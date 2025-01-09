@@ -1,7 +1,7 @@
 // Gerekli servislerin ve yardımcı fonksiyonların import edilmesi
 import walletService from "../services/wallet_service.js";
 import poolService from "../services/pool_service.js";
-import HashUtils from "../utils/hash_utils.js";
+import { SHA256 } from "../utils/encryption_utils.js";
 import chalk from "chalk";
 import inquirer from "inquirer";
 
@@ -9,7 +9,7 @@ import inquirer from "inquirer";
 async function swap(privateKey, poolId, token, amount) {
   try {
     // Private key'den Public key oluşturma
-    const publicKey = HashUtils.sha256(privateKey);
+    const publicKey = SHA256(privateKey);
 
     // Public key ile cüzdan bilgilerini getirme
     const wallet = await walletService.getWalletByPublicKey(publicKey);
@@ -114,7 +114,7 @@ async function swap(privateKey, poolId, token, amount) {
 // Havuza likidite ekleme fonksiyonu
 async function addLiquidity(privateKey, poolId, token, amount) {
   // Private key'den Public key oluşturma
-  const publicKey = HashUtils.sha256(privateKey);
+  const publicKey = SHA256(privateKey);
 
   // Public key ile cüzdan bilgilerini getirme
   const wallet = await walletService.getWalletByPublicKey(publicKey);
