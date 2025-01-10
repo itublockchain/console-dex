@@ -1,7 +1,8 @@
 import fs from "fs";
 
 import { privateKeyToAccount } from "../../viem/utils/utils.js";
-import { AES256_encrypt } from "../utils/encryption_utils.js";
+import { AES256_encrypt, AES256_decrypt } from "../utils/encryption_utils.js";
+import chalk from "chalk";
 
 import { wallet_passwords } from "../../index.js";
 

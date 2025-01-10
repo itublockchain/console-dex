@@ -1,4 +1,6 @@
 const hre = require("hardhat");
+const path = require("node:path");
+const fs = require("fs");
 
 const ethers = hre.ethers;
 
@@ -64,6 +66,12 @@ async function main() {
     await createPairTx.wait();
     const pairAddress = await factory.getPair(token0Address, token1Address);
     console.log("Pool created at:", pairAddress);
+
+    // 4c Deploy flash swap contract
+    const FlashSwap = await ethers.getContractFactory("FlashSwapExample");
+    flashSwap = await FlashSwap.deploy(pairAddress);
+    const flashSwapAddress = await flashSwap.getAddress();
+    await flashSwap.waitForDeployment();
 
     // 4. Deploy WETH (needed for Router)
     console.log("\n4. Deploying WETH...");
@@ -141,7 +149,18 @@ async function main() {
       router: routerAddress,
       weth: wethAddress,
       pair: pairAddress,
+      flashSwap: flashSwapAddress,
     });
+
+    return {
+      tokenA: token0Address,
+      tokenB: token1Address,
+      factory: factoryAddress,
+      router: routerAddress,
+      pair: pairAddress,
+      weth: wethAddress,
+      flashSwap: flashSwapAddress,
+    };
   } catch (error) {
     console.error("Error during deployment:", error);
     console.error("Error details:", error.message);
@@ -150,7 +169,13 @@ async function main() {
 }
 
 main()
-  .then(() => process.exit(0))
+  .then((data) => {
+    fs.writeFileSync(
+      fs.realpathSync("./addresses.json"),
+      JSON.stringify(data, null, 2)
+    );
+    return process.exit(0);
+  })
   .catch((error) => {
     console.error(error);
     process.exit(1);

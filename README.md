@@ -17,7 +17,10 @@ npm start
 ## Kullanılan Teknolojiler:
 
 - Node.js
-- Firebase
+- Solidity
+- Hardhat
+- Ethers
+- Viem
 
 ---
 

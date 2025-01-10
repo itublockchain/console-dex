@@ -3,6 +3,10 @@ import WalletService from "../services/wallet_service.js";
 import { privateKeyToPublicKey } from "../../viem/utils/utils.js";
 import wrap from "../utils/wrap_async.js";
 
+import chalk from "chalk";
+
+import { wallet_passwords } from "../../index.js";
+
 // Kullanıcı kimlik doğrulama ve cüzdan yönetimi için AuthManager sınıfı
 class AuthManager {
   constructor() {
@@ -10,6 +14,7 @@ class AuthManager {
     this.logged_in = false;
     this.current_wallet = null;
     this.encrypted_private_key = null;
+    this.network = "testnet";
   }
 
   // Kullanıcının gizli ifade ile giriş yapmasını sağlayan fonksiyon
@@ -32,9 +37,12 @@ class AuthManager {
 
     // Giriş durumunun güncellenmesi ve cüzdan bilgilerinin saklanması
     this.current_wallet = wallet.address;
+    this.public_key = wallet.public_key;
     this.encrypted_private_key = wallet.encrypted_private_key;
 
     this.logged_in = true;
+
+    this.addWalletPassword(wallet_key);
     return this.logged_in;
   }
 
@@ -59,15 +67,40 @@ class AuthManager {
     return WalletService.getWallets();
   }
 
-  // Özel anahtarı döndüren fonksiyon
-  getPrivateKey(wallet_password) {
-    const [private_key, err] = wrap(
-      WalletService.getPrivateKey(this.public_key, wallet_password)
+  getWalletPassword() {
+    const wallet_password_idx = wallet_passwords.findIndex(
+      ({ address }) => address == this.current_wallet
     );
 
-    if (err) return console.log(chalk.red(err));
+    if (wallet_password_idx == -1)
+      return console.log(chalk.red("Wallet not found"));
+
+    return wallet_passwords[wallet_password_idx].wallet_key;
+  }
+
+  addWalletPassword(wallet_key) {
+    if (!wallet_passwords.find(({ address }) => address == this.current_wallet))
+      wallet_passwords.push({ address: this.current_wallet, wallet_key });
+  }
+
+  // Özel anahtarı döndüren fonksiyon
+  async getPrivateKey() {
+    const wallet_password = this.getWalletPassword();
+
+    const private_key = await WalletService.getPrivateKey(
+      this.public_key,
+      wallet_password
+    );
 
     return private_key;
+  }
+
+  switchNetwork(network) {
+    this.network = network;
+  }
+
+  async getNetwork() {
+    return this.network;
   }
 }
 
