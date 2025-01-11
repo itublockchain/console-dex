@@ -140,6 +140,38 @@ async function main() {
       ethers.formatEther(await token1.balanceOf(deployer.address))
     );
 
+    //////////////////////////////////////////////////////////
+    const swap = await ethers.getContractFactory("UniswapV2SwapExamples");
+    const swapInstance = await swap.deploy(routerAddress, wethAddress);
+    await swapInstance.waitForDeployment();
+    const swapAddress = await swapInstance.getAddress();
+    console.log("UniswapV2SwapExamples deployed to:", swapAddress);
+
+    // Approve tokens for swap
+    const amountToSwap = ethers.parseEther("1.0");
+    await token0.approve(swapAddress, amountToSwap);
+    console.log("Approved Token0 for Swap Contract");
+
+    // Get balances before swap
+    const token1BalanceBefore = await token1.balanceOf(deployer.address);
+    console.log("Token1 balance before swap:", ethers.formatEther(token1BalanceBefore));
+
+    // Perform swap
+    const tx = await swapInstance.swapSingleHopExactAmountIn(
+        amountToSwap,
+        0,
+        await token0.getAddress(),
+        await token1.getAddress()
+    );
+    await tx.wait();
+    console.log("Swap transaction successful!");
+
+    // Get balances after swap
+    const token1BalanceAfter = await token1.balanceOf(deployer.address);
+    console.log("Token1 balance after swap:", ethers.formatEther(token1BalanceAfter));
+    console.log("Tokens received:", ethers.formatEther(token1BalanceAfter - token1BalanceBefore));
+
+    ////////////////////////////////////////////////////////////
     // Log final setup
     console.log("\nFinal Setup:");
     console.log({
@@ -150,6 +182,7 @@ async function main() {
       weth: wethAddress,
       pair: pairAddress,
       flashSwap: flashSwapAddress,
+      swap: swapAddress,
     });
 
     return {
