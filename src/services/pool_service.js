@@ -1,27 +1,18 @@
 import ViemPool from "../../viem/functions/pool.js";
-import AuthManager from "../managers/auth_manager.js";
-
-function initializeNetwork() {
-  ViemPool.network = AuthManager.network;
-}
+import AuthManager from "../managers/AuthManager.js";
 
 async function getPools() {
-  initializeNetwork();
-
   const pools = await ViemPool.getPools();
 
   return pools;
 }
 
 async function getPoolByName(pool_name) {
-  initializeNetwork();
   const pools = await ViemPool.getPools();
   return pools.find(({ name }) => name === pool_name);
 }
 
 async function getFactoryContract() {
-  initializeNetwork();
-
   const factory = await ViemPool.initializeFactory();
   try {
     await factory.read.feeTo();
@@ -44,7 +35,6 @@ async function updatePool(pool) {
 
 async function addLiquidity(pool_address, token_address, amount) {
   const private_key = await AuthManager.getPrivateKey();
-  initializeNetwork();
 
   return await ViemPool.addLiquidity(
     pool_address,
@@ -57,8 +47,6 @@ async function addLiquidity(pool_address, token_address, amount) {
 
 async function swap(pool_address, token_in_address, amount) {
   const private_key = await AuthManager.getPrivateKey();
-
-  initializeNetwork();
 
   return await ViemPool.swap(
     pool_address,

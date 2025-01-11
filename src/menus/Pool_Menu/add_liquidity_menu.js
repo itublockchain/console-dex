@@ -1,6 +1,6 @@
 import inquirer from "inquirer";
 import poolService from "../../services/pool_service.js";
-import transactionManager from "../../managers/transaction_manager.js";
+import transactionManager from "../../managers/TransactionManager.js";
 
 async function AddLiquidityMenu(pool_name) {
   const pool = await poolService.getPoolByName(pool_name);

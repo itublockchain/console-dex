@@ -4,6 +4,9 @@ import chalk from "chalk";
 import PoolService from "../../services/pool_service.js";
 import PairMenu from "./pair_menu.js";
 import ReturnMenu from "../Components/return_menu.js";
+import AuthManager from "../../managers/AuthManager.js";
+
+import CreatePairMenu from "./create_pair_menu.js";
 
 async function PoolsMenu() {
   const factory_contract = await PoolService.getFactoryContract();
@@ -22,13 +25,19 @@ async function PoolsMenu() {
       type: "list",
       name: "choice",
       message: "Pools Menu",
-      choices: [...poolsChoices, "Return Back"],
+      choices: [
+        ...poolsChoices,
+        { name: "Create Pair", disabled: !AuthManager.isLoggedIn() },
+        "Return Back",
+      ],
     },
   ]);
 
-  if (pools.some(({ name }) => name === choice)) {
-    await PairMenu(choice);
-  }
+  if (pools.some(({ name }) => name === choice)) return await PairMenu(choice);
+
+  if (choice === "Create Pair") return await CreatePairMenu();
+
+  return;
 }
 
 export default PoolsMenu;

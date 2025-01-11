@@ -1,6 +1,6 @@
 import * as viem from "viem";
 import { ABI, networks } from "../utils/utils.js";
-import AuthManager from "../../src/managers/auth_manager.js"; // AuthManager'ı burada import edin
+import NetworkManager from "../../src/managers/NetworkManager.js"; // NetworkManager'ı burada import edin
 
 import addresses from "../addresses.json" assert { type: "json" };
 
@@ -11,7 +11,7 @@ class Contract {
     this.contract = null;
 
     this.publicClient = viem.createPublicClient({
-      transport: networks[AuthManager.network].transport,
+      transport: networks[NetworkManager.network.name].transport,
     });
   }
 
@@ -27,7 +27,7 @@ class Contract {
   }
 
   setAddress() {
-    this.address = addresses[AuthManager.network][this.contract_name];
+    this.address = addresses[NetworkManager.network.name][this.contract_name];
   }
 
   async waitForTransaction(tx) {

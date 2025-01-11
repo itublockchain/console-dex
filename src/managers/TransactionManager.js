@@ -1,5 +1,4 @@
 // Gerekli servislerin ve yardımcı fonksiyonların import edilmesi
-import WalletService from "../services/wallet_service.js";
 import PoolService from "../services/pool_service.js";
 
 // Token takası gerçekleştiren fonksiyon

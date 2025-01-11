@@ -3,8 +3,6 @@ import ERC20 from "./ERC20.js";
 import Router from "./router.js";
 import Contract from "./Contract_Base.js";
 
-import AuthManager from "../../src/managers/auth_manager.js";
-
 class Pool extends Contract {
   constructor() {
     super();

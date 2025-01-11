@@ -5,8 +5,11 @@ import { AES256_encrypt, AES256_decrypt } from "../utils/encryption_utils.js";
 import chalk from "chalk";
 
 import { wallet_passwords } from "../../index.js";
+import getERC20Properties from "../../viem/functions/getERC20Properties.js";
+import AuthManager from "../managers/AuthManager.js";
 
 const wallet_file_address = import.meta.resolve("../wallets.json").slice(7);
+const tokens_file_address = import.meta.resolve("../tokens.json").slice(7);
 
 function getWallets() {
   try {
@@ -90,6 +93,56 @@ async function createWallet(private_key, wallet_key) {
   return new_wallet;
 }
 
+async function getERC20TokenBalance(token_address) {
+  const token = await getERC20Properties(token_address);
+  const token_properties = token.__token_properties;
+  if (!token_properties)
+    return {
+      name: "Unknown Token",
+      state: false,
+    };
+
+  const balance = await token.balanceOf(AuthManager.current_wallet);
+  return { ...token_properties, balance, state: true };
+}
+
+async function getTokenAddresses() {
+  try {
+    const data = fs.readFileSync(tokens_file_address, "utf-8");
+
+    const tokens = JSON.parse(data) || [];
+    return tokens;
+  } catch (e) {
+    fs.writeFileSync(tokens_file_address, JSON.stringify([]), "utf-8");
+    return [];
+  }
+}
+
+async function addTokenAddress(token_address) {
+  try {
+    const tokens = await getTokenAddresses();
+
+    const index = tokens.findIndex((t) => t === token_address);
+
+    if (index !== -1) return "Token already exists.";
+
+    const token = await getERC20Properties(token_address);
+    const token_properties = token.__token_properties;
+    if (!token_properties)
+      return {
+        name: "Unknown Token",
+        state: false,
+      };
+
+    tokens.push(token_address);
+
+    fs.writeFileSync(tokens_file_address, JSON.stringify(tokens), "utf-8");
+    return { ...token_properties, state: true };
+  } catch (e) {
+    return { state: false };
+  }
+}
+
 export default {
   getWallets,
   getWalletByPublicKey,
@@ -97,4 +150,7 @@ export default {
   getPrivateKey,
   updateWallet,
   createWallet,
+  getERC20TokenBalance,
+  getTokenAddresses,
+  addTokenAddress,
 };

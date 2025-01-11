@@ -1,56 +1,37 @@
 import inquirer from "inquirer";
 import chalk from "chalk";
 
-import AuthManager from "../managers/auth_manager.js";
+import AuthManager from "../managers/AuthManager.js";
 import ItuScanMenu from "./Components/dex_scan_menu.js";
 import WalletMenu from "./Wallet_Menu/wallet_menu.js";
 import PoolsMenu from "./Pool_Menu/pools_menu.js";
 import ChooseWalletMenu from "./Wallet_Menu/choose_wallet_menu.js";
-import { networks } from "../utils/networks.js";
+import SwitchNetworkMenu from "./Network_Menu/switch_network_menu.js";
+
+import Header from "./Components/Header.js";
 
 export default async function MainMenu() {
   console.clear();
 
-  const isWalletConnected = AuthManager.isLoggedIn();
   const choices = [
     "Pools",
     // To be implemented...
-    { name: "My Balances", disabled: true },
+    { name: "My Balances", disabled: !AuthManager.isLoggedIn() },
     { name: "ITUScan", disabled: true },
   ];
 
-  console.log(
-    chalk.gray(
-      "----------------------------------------------------------------------------------------"
-    )
-  );
+  Header();
 
-  console.log(chalk.blue.bold("CONSOLE-DEX: A Defi Application\n"));
-  console.log("Network:", chalk.green(AuthManager.network.toUpperCase()));
-
-  if (isWalletConnected) {
-    console.log("Connected Wallet: " + AuthManager.getCurrentWallet());
+  if (AuthManager.isLoggedIn()) {
     choices.push("Disconnect");
   } else if (AuthManager.getWallets().length > 0) {
-    console.log(
-      chalk.blueBright("Wallet: ") +
-        "Please choose a wallet. " +
-        chalk.yellow(`(${AuthManager.getWallets().length} wallets found)`)
-    );
     choices.push("Choose Wallet");
   } else {
-    console.log("Wallet: ", chalk.red("*Wallet not found!*"));
     choices.push("Initialize Wallet");
   }
 
-  console.log(
-    chalk.gray(
-      "----------------------------------------------------------------------------------------"
-    )
-  );
-
   choices.push({
-    name: chalk.green(`Switch to other network.`),
+    name: chalk.green(`Switch to other networks.`),
     disabled: false,
   });
   choices.push(chalk.red("Exit (x)"));
@@ -102,13 +83,8 @@ export default async function MainMenu() {
     case "Disconnect":
       await AuthManager.disconnect();
       break;
-    case chalk.green(`Switch to other network.`):
-      AuthManager.network =
-        networks[
-          (networks.findIndex((network) => network == AuthManager.network) +
-            1) %
-            networks.length
-        ];
+    case chalk.green(`Switch to other networks.`):
+      await SwitchNetworkMenu();
       break;
     case chalk.red("Exit (x)"):
       return console.log("Exiting...");

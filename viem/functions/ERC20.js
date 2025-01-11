@@ -16,10 +16,31 @@ class ERC20 extends Contract {
     super(address);
     this.contract_name = "ERC20";
     this.symbol = "";
+    this.name = "";
+    this.decimals = 1;
   }
 
   setSymbol(symbol) {
     this.symbol = symbol;
+  }
+
+  async getProperties() {
+    try {
+      await this.getContract();
+
+      const name = await this.contract.read.name();
+      this.name = name;
+
+      const symbol = await this.contract.read.symbol();
+      this.symbol = symbol;
+
+      const decimals = await this.contract.read.decimals();
+      this.decimals = decimals;
+
+      return { name, symbol, decimals, address: this.address };
+    } catch (e) {
+      return false;
+    }
   }
 
   async approve(target, amount) {

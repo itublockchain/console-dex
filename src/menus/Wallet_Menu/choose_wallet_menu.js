@@ -4,7 +4,7 @@ import wrap from "../../utils/wrap_async.js";
 
 import ReturnMenu from "../Components/return_menu.js";
 
-import AuthManager from "../../managers/auth_manager.js";
+import AuthManager from "../../managers/AuthManager.js";
 import { AES256_decrypt } from "../../utils/encryption_utils.js";
 
 export default async function ChooseWalletMenu() {
@@ -38,9 +38,9 @@ export default async function ChooseWalletMenu() {
       type: "select",
       name: "main_menu",
       message:
-        chalk.yellow("Are you sure?\n") +
-        `\n${chalk.green("[Yes]")} to login.` +
-        `\n${chalk.red("[No]")} to return to the main menu.`,
+        chalk.yellow("Are you sure?") +
+        `\n-> ${chalk.green("[Yes]")} to login.` +
+        `\n-> ${chalk.red("[No]")} to return to the main menu.\n`,
       choices: ["Yes", "No"],
     },
   ]);

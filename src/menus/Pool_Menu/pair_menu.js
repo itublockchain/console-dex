@@ -1,7 +1,7 @@
 import inquirer from "inquirer";
 import PoolService from "../../services/pool_service.js";
 import SwapMenu from "./swap_menu.js";
-import AuthManager from "../../managers/auth_manager.js";
+import AuthManager from "../../managers/AuthManager.js";
 import chalk from "chalk";
 import AddLiquidityMenu from "./add_liquidity_menu.js";
 

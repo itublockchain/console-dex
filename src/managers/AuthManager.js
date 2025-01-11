@@ -14,7 +14,6 @@ class AuthManager {
     this.logged_in = false;
     this.current_wallet = null;
     this.encrypted_private_key = null;
-    this.network = "testnet";
   }
 
   // Kullanıcının gizli ifade ile giriş yapmasını sağlayan fonksiyon
@@ -93,14 +92,6 @@ class AuthManager {
     );
 
     return private_key;
-  }
-
-  switchNetwork(network) {
-    this.network = network;
-  }
-
-  async getNetwork() {
-    return this.network;
   }
 }
 

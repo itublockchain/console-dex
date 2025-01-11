@@ -2,6 +2,8 @@ require("@nomicfoundation/hardhat-toolbox");
 require("@nomicfoundation/hardhat-verify");
 require("dotenv").config();
 
+const pre_defined_networks = require("../viem/pre_defined_networks.json");
+
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: {
@@ -22,8 +24,13 @@ module.exports = {
       timeout: 60_000, // 60 saniye
       confirmations: 5,
     },
+    sepolia: {
+      url: pre_defined_networks.sepolia.url,
+      accounts: [process.env.PRIVATE_KEY],
+      allowUnlimitedContractSize: true,
+    },
     local: {
-      url: "http://localhost:8545",
+      url: pre_defined_networks.testnet.url,
       accounts: [process.env.PRIVATE_KEY],
       allowUnlimitedContractSize: true,
     },

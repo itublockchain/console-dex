@@ -3,9 +3,6 @@ import { networks, privateKeyToAccount } from "../utils/utils.js";
 import Pool from "./pool.js";
 import Contract from "./Contract_Base.js";
 import ERC20 from "./ERC20.js";
-import FlashSwap from "./flashSwap.js";
-
-import AuthManager from "../../src/managers/auth_manager.js";
 
 class Router extends Contract {
   constructor() {
@@ -19,7 +16,7 @@ class Router extends Contract {
       const account = privateKeyToAccount(private_key);
       const walletClient = await viem.createWalletClient({
         account,
-        transport: networks[AuthManager.network].transport,
+        transport: networks[NetworkManager.network.name].transport,
       });
 
       const token_in = new ERC20(token_in_address);
@@ -97,7 +94,7 @@ class Router extends Contract {
       const account = privateKeyToAccount(private_key);
       const walletClient = viem.createWalletClient({
         account: account,
-        transport: networks[AuthManager.network].transport,
+        transport: networks[NetworkManager.network.name].transport,
       });
 
       this.getContract({ walletClient });

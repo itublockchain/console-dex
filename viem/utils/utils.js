@@ -11,7 +11,10 @@ import ERC20 from "../ABI/MockERC20.sol/MockERC20.json" assert { type: "json" };
 import router from "../ABI/UniswapV2Router02.sol/UniswapV2Router02.json" assert { type: "json" };
 import flashSwap from "../ABI/FlashSwapExample.sol/FlashSwapExample.json" assert { type: "json" };
 
+import NetworkManager from "../../src/managers/NetworkManager.js";
+
 function privateKeyToPublicKey(private_key) {
+  // Düz string olarak verdiğimizde uygulama kabul etmiyor. Hex yapabilmemiz için `${private_key}` şeklinde kullanmamız yeterli.
   const account = privateKeyToAccount(`${private_key}`);
   return account.publicKey;
 }
@@ -24,15 +27,7 @@ const ABI = {
   flashSwap: flashSwap.abi,
 };
 
-export const networks = {
-  testnet: {
-    url: "http://localhost:8545",
-    transport: http("http://localhost:8545"),
-  },
-  sepolia: {
-    url: "https://ethereum-sepolia-rpc.publicnode.com",
-    transport: http("https://ethereum-sepolia-rpc.publicnode.com"),
-  },
+let networks = {
   custom: (url) => {
     return {
       url,
@@ -41,10 +36,20 @@ export const networks = {
   },
 };
 
+NetworkManager.networks.forEach(({ name, url }) => {
+  networks[name] = {
+    url,
+    transport: http(url),
+  };
+});
+
+console.log(networks);
+
 export {
   publicKeyToAddress,
   privateKeyToAccount,
   privateKeyToAddress,
   privateKeyToPublicKey,
   ABI,
+  networks,
 };
