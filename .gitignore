@@ -19,3 +19,6 @@ backend/.env
 
 # Hardhat Ignition default folder for deployments against a local node
 backend/ignition/deployments/chain-31337
+
+# Ignore wallets
+/src/wallets.json

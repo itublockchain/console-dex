@@ -9,10 +9,14 @@ import { wallet_passwords } from "../../index.js";
 const wallet_file_address = import.meta.resolve("../wallets.json").slice(7);
 
 function getWallets() {
-  const data = fs.readFileSync(wallet_file_address, "utf-8");
+  try {
+    const data = fs.readFileSync(wallet_file_address, "utf-8");
 
-  const wallets = JSON.parse(data);
-  return wallets;
+    const wallets = JSON.parse(data) || [];
+    return wallets;
+  } catch (e) {
+    return [];
+  }
 }
 
 async function getWalletByPublicKey(public_key) {
