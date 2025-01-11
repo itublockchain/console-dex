@@ -2,7 +2,7 @@ import * as viem from "viem";
 import { ABI, networks } from "../utils/utils.js";
 import AuthManager from "../../src/managers/auth_manager.js"; // AuthManager'ı burada import edin
 
-import { addresses } from "../../path.js";
+import addresses from "../addresses.json" assert { type: "json" };
 
 class Contract {
   constructor(address) {
@@ -27,8 +27,7 @@ class Contract {
   }
 
   setAddress() {
-    const _addresses = addresses();
-    this.address = _addresses[this.contract_name];
+    this.address = addresses[AuthManager.network][this.contract_name];
   }
 
   async waitForTransaction(tx) {
