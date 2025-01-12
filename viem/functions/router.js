@@ -1,10 +1,12 @@
 import * as viem from "viem";
 import { networks, privateKeyToAccount } from "../utils/utils.js";
+import { ViemPool } from "./factory.js";
 import Pool from "./pool.js";
 import Contract from "./Contract_Base.js";
 import ERC20 from "./ERC20.js";
 
 import NetworkManager from "../../src/managers/NetworkManager.js";
+import Swap from "./swap_contract.js";
 
 class Router extends Contract {
   constructor() {
@@ -15,11 +17,28 @@ class Router extends Contract {
 
   async swap(pool_address, token_in_address, amount_in, private_key) {
     try {
+      // Validate parameters
+      if (!pool_address || !token_in_address || !amount_in || !private_key) {
+        throw new Error("Invalid parameters for swap.");
+      }
+
       const account = privateKeyToAccount(private_key);
       const walletClient = await viem.createWalletClient({
         account,
-        transport: networks[NetworkManager.network.name].transport,
+        transport: networks()[NetworkManager.network.name].transport,
       });
+
+      // Get the pool contract
+      const pair = new Pool(pool_address);
+      const pair_contract = await pair.getContract({ walletClient });
+      console.log(pair_contract);
+
+      // Get token addresses
+      const token0 = await pair_contract.read.token0();
+      const token1 = await pair_contract.read.token1();
+
+      // Determine token_out_address
+      const token_out_address = token_in_address === token0 ? token1 : token0;
 
       const token_in = new ERC20(token_in_address);
       await token_in.getContract({ walletClient });
@@ -27,48 +46,27 @@ class Router extends Contract {
       // Approve the pool contract to spend the specified amount of token_in
       await token_in.contract.write.approve([pool_address, amount_in]);
 
-      // Check the allowance
-      const allowance = await token_in.contract.read.allowance([
-        account.address,
-        pool_address,
-      ]);
-      console.log("Token Allowance:", allowance.toString());
-
-      const pair = new Contract();
-      pair.contract_name = "pair";
-      pair.address = pool_address;
-      const pair_contract = await pair.getContract({ walletClient });
-
       const reserves = await pair_contract.read.getReserves();
-      const token0 = await pair_contract.read.token0();
-      const isToken0 = token_in_address === token0;
-
-      const reserve_in = isToken0 ? reserves[0] : reserves[1];
-      const reserve_out = isToken0 ? reserves[1] : reserves[0];
-
-      console.log("Amount In:", amount_in);
-      console.log("Reserve In:", reserve_in.toString());
-      console.log("Reserve Out:", reserve_out.toString());
+      const [reserve_in, reserve_out] =
+        token_in_address === token0
+          ? [reserves[0], reserves[1]]
+          : [reserves[1], reserves[0]];
 
       const amount_in_bigint = BigInt(amount_in);
+      const swap = new Swap();
 
-      if (amount_in_bigint <= 0n) {
-        throw new Error("Invalid input amount: must be greater than zero.");
-      }
+      /*
+        uint256 amountIn,
+        uint256 amountOutMin,
+        address token0,
+        address token1
+      **********************/
 
-      const amount_out =
-        (amount_in_bigint * reserve_out) / (reserve_in + amount_in_bigint);
-      console.log("Calculated Amount Out:", amount_out.toString());
-
-      if (amount_out <= 0n) {
-        throw new Error("Insufficient output amount: not enough liquidity.");
-      }
-
-      const tx = await pair_contract.write.swap([
-        isToken0 ? amount_in_bigint : 0n, // amount0Out
-        isToken0 ? 0n : amount_in_bigint, // amount1Out
-        account.address, // to
-        "0x", // data (empty for regular swaps)
+      const tx = await swap.contract.write.swapSingleHopExactAmountIn([
+        amount_in_bigint,
+        (amount_in_bigint * 95n) / 100n, // %5 Slippage
+        token_in_address,
+        token_out_address,
       ]);
 
       const receipt = await this.publicClient.waitForTransactionReceipt({
@@ -87,21 +85,22 @@ class Router extends Contract {
       return receipt;
     } catch (error) {
       console.error("Swap error:", error);
-      throw error;
+      return error;
     }
   }
 
+  // Add Liquidity
   async addLiquidity(pool_address, token_address, token_amount, private_key) {
     try {
       const account = privateKeyToAccount(private_key);
       const walletClient = viem.createWalletClient({
         account: account,
-        transport: networks[NetworkManager.network.name].transport,
+        transport: networks()[NetworkManager.network.name].transport,
       });
 
       this.getContract({ walletClient });
 
-      const pools = await Pool.getPools();
+      const pools = await ViemPool.getPools();
       const pool = pools.find(({ address }) => address === pool_address);
       if (!pool) throw new Error("Pool not found");
 

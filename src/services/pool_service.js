@@ -1,4 +1,4 @@
-import ViemPool from "../../viem/functions/pool.js";
+import { ViemPool } from "../../viem/functions/factory.js";
 import AuthManager from "../managers/AuthManager.js";
 
 async function getPools() {
@@ -13,7 +13,7 @@ async function getPoolByName(pool_name) {
 }
 
 async function getFactoryContract() {
-  const factory = await ViemPool.initializeFactory();
+  const factory = ViemPool.contract;
   try {
     await factory.read.feeTo();
     return factory.address;

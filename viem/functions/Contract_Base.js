@@ -10,12 +10,10 @@ class Contract {
     this.address = address;
     this.contract = null;
 
-    this.publicClient = viem.createPublicClient({
-      transport: networks[NetworkManager.network.name].transport,
-    });
+    this.publicClient = this.usePublicClient();
   }
 
-  getContract({ walletClient } = { walletClient: this.publicClient }) {
+  getContract({ walletClient } = { walletClient: this.usePublicClient() }) {
     if (this.address == null) return "No Contract";
     this.contract = viem.getContract({
       address: `${this.address}`,
@@ -26,8 +24,19 @@ class Contract {
     return this.contract;
   }
 
+  usePublicClient() {
+    return viem.createPublicClient({
+      transport: networks()[NetworkManager.network.name].transport,
+    });
+  }
+
   setAddress() {
-    this.address = addresses[NetworkManager.network.name][this.contract_name];
+    try {
+      this.address = addresses[NetworkManager.network.name][this.contract_name];
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async waitForTransaction(tx) {

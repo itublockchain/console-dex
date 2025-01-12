@@ -6,5 +6,9 @@
   {
     "name": "sepolia",
     "url": "https://ethereum-sepolia-rpc.publicnode.com"
+  },
+  {
+    "name": "holesky",
+    "url": "https://1rpc.io/holesky"
   }
 ]

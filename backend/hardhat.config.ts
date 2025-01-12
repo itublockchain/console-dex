@@ -16,21 +16,21 @@ module.exports = {
     },
   },
   networks: {
-    hardhat: {
-      allowUnlimitedContractSize: true,
-    },
     holesky: {
-      url: `https://ethereum-holesky-rpc.publicnode.com`,
+      url: `https://1rpc.io/holesky`,
       accounts: [process.env.PRIVATE_KEY],
-      gasPrice: "auto",
-      gasMultiplier: 1.5,
+      gasPrice: 3000000000, // 3 gwei fixed gas price
       timeout: 60_000,
+      allowUnlimitedContractSize: true,
       confirmations: 5,
     },
     sepolia: {
       url: pre_defined_networks.find((ntw: any) => ntw.name === "sepolia").url,
       accounts: [process.env.PRIVATE_KEY],
+      gasPrice: 3000000000, // 3 gwei fixed gas price
+      timeout: 60_000,
       allowUnlimitedContractSize: true,
+      confirmations: 5,
     },
     local: {
       url: pre_defined_networks.find((ntw: any) => ntw.name === "testnet").url,

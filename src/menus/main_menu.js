@@ -9,95 +9,83 @@ import ChooseWalletMenu from "./Wallet_Menu/choose_wallet_menu.js";
 import SwitchNetworkMenu from "./Network_Menu/switch_network_menu.js";
 
 import Header from "./Components/Header.js";
+import WalletService from "../services/wallet_service.js";
+import AddWalletMenu from "./Wallet_Menu/add_wallet_menu.js";
 
 export default async function MainMenu() {
   console.clear();
 
   const choices = [
-    "Pools",
-    // To be implemented...
-    { name: "My Balances", disabled: !AuthManager.isLoggedIn() },
-    { name: "ITUScan", disabled: true },
+    {
+      name: chalk.blue("Wallet"),
+      value: 0,
+      disabled: WalletService.getWallets().length !== 0,
+    },
+    { name: chalk.cyan("Pools"), value: 7 },
+    // Probably not gonna implemented.
+    //{ name: "ITUScan", value: 1, disabled: true },
   ];
 
   Header();
 
   if (AuthManager.isLoggedIn()) {
-    choices.push("Disconnect");
+    choices.push({ name: "Disconnect", value: 2 });
   } else if (AuthManager.getWallets().length > 0) {
-    choices.push("Choose Wallet");
+    choices.push({ name: "Choose Wallet", value: 3 });
   } else {
-    choices.push("Initialize Wallet");
+    choices.push({ name: "Initialize Wallet", value: 4 });
   }
 
   choices.push({
     name: chalk.green(`Switch to other networks.`),
-    disabled: false,
+    value: 5,
   });
-  choices.push(chalk.red("Exit (x)"));
+  choices.push({ name: chalk.red("Exit (x)"), value: 6 });
 
   const { choice } = await inquirer.prompt([
     {
       type: "list",
       name: "choice",
-      message: chalk.yellow("Main Menu"),
-      choices: choices,
+      message: chalk.yellow("Main Menu\n"),
+      choices: choices
+        .map((ch) => {
+          ch.disabled = ch.disabled === false;
+          return ch;
+        })
+        .sort((a, b) => {
+          return (
+            (a.disabled === false ? -1 : 1) - (b.disabled === false ? -1 : 1)
+          );
+        }),
     },
   ]);
 
   switch (choice) {
-    case "My Balances":
-      await WalletMenu(AuthManager.getCurrentWallet());
+    // Wallet
+    case 0:
+      await WalletMenu();
       break;
-    case "ITUScan":
+    // ITUScan
+    case 1:
       await ItuScanMenu();
       break;
-    case "Pools":
+    // Pools
+    case 7:
       await PoolsMenu();
       break;
-    case "Choose Wallet":
+    case 3:
       await ChooseWalletMenu();
       break;
-    case "Initialize Wallet":
-      const { private_key } = await inquirer.prompt([
-        {
-          type: "input",
-          name: "private_key",
-          message:
-            "\nFirst of all, we need your private key." +
-            "\nAfter that, with a wallet password, we will create your wallet." +
-            "\nEnter your private key:",
-        },
-      ]);
-
-      const { wallet_password } = await inquirer.prompt([
-        {
-          type: "input",
-          name: "wallet_password",
-          message: "Enter your wallet password:",
-        },
-      ]);
-
-      try {
-        await AuthManager.login(private_key, wallet_password);
-      } catch (error) {
-        await inquirer.prompt([
-          {
-            type: "list",
-            name: "ans",
-            message: "Wrong private key!",
-            choices: [{ name: chalk.red("Return Back"), value: "Return Back" }],
-          },
-        ]);
-      }
+    case 4:
+      await AddWalletMenu();
       break;
-    case "Disconnect":
+    case 2:
       await AuthManager.disconnect();
       break;
-    case chalk.green(`Switch to other networks.`):
+    case 5:
       await SwitchNetworkMenu();
       break;
-    case chalk.red("Exit (x)"):
+    case 6:
       return console.log("Exiting...");
   }
 

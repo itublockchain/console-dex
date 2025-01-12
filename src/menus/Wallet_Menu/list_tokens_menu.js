@@ -3,7 +3,7 @@ import inquirer from "inquirer";
 
 import chalk from "chalk";
 import TokenMenu from "./token_menu.js";
-import WalletMenu from "./wallet_menu.js";
+import WalletMenu from "./my_wallet_menu.js";
 
 import Header from "../Components/Header.js";
 
@@ -39,9 +39,9 @@ async function ListTokensMenu() {
           disabled: true,
         };
       return {
-        name: `${token.symbol} (${token.name}): ${Number(token.balance).toFixed(
-          2
-        )}$`,
+        name: `${token.symbol} (${token.name}): ${Number(
+          Number(token.balance) / 10 ** token.decimals
+        ).toFixed(2)}$`,
         value: token.address,
       };
     }),

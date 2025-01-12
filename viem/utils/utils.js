@@ -27,21 +27,26 @@ const ABI = {
   flashSwap: flashSwap.abi,
 };
 
-let networks = {
-  custom: (url) => {
-    return {
+let networks = () => {
+  const ntw = {};
+
+  NetworkManager.networks.forEach(({ name, url }) => {
+    ntw[name] = {
       url,
       transport: http(url),
     };
-  },
-};
+  });
 
-NetworkManager.networks.forEach(({ name, url }) => {
-  networks[name] = {
-    url,
-    transport: http(url),
+  return {
+    ...ntw,
+    custom: (url) => {
+      return {
+        url,
+        transport: http(url),
+      };
+    },
   };
-});
+};
 
 console.log(networks);
 

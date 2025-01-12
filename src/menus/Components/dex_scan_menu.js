@@ -1,5 +1,5 @@
 import inquirer from "inquirer";
-import WalletMenu from "../Wallet_Menu/wallet_menu.js";
+import WalletMenu from "../Wallet_Menu/my_wallet_menu.js";
 import walletService from "../../services/wallet_service.js";
 
 async function DexScanMenu() {

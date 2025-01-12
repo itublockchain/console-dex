@@ -1,30 +1,26 @@
-import AuthManager from "../../managers/AuthManager.js";
-import { networks } from "../../utils/networks.js";
-
 import inquirer from "inquirer";
 import chalk from "chalk";
 import MainMenu from "../main_menu.js";
 import NetworkMenu from "./network_menu.js";
+import NetworkManager from "../../managers/NetworkManager.js";
+import Header from "../Components/Header.js";
 
 async function SwitchNetworkMenu() {
   const choices = [
     chalk.green("Add Network"),
     chalk.red("Return Back"),
-    ...networks,
+    ...NetworkManager.networks.map(({ name }) => name),
   ];
 
-  console.log(
-    chalk.gray(
-      "----------------------------------------------------------------------------------------"
-    )
-  );
+  console.clear();
+  Header();
 
   const { choice } = await inquirer.prompt([
     {
       type: "list",
       name: "choice",
       message: chalk.gray(
-        "Network Menu, please select a network to configure or select network:"
+        "Network Menu, please select a network to configure or select network:\n"
       ),
       choices,
     },
@@ -40,10 +36,9 @@ async function SwitchNetworkMenu() {
         },
       ]);
 
-      console.log(chalk.gray("Network added...", network));
-      networks.push(network);
+      console.log(chalk.gray("Network added..."), chalk.yellow(network));
+      NetworkManager.networks.push({ name: network, url: "" });
       await SwitchNetworkMenu();
-      await MainMenu();
       break;
     case chalk.red("Return Back"):
       break;

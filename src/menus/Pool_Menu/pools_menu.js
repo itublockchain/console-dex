@@ -12,8 +12,10 @@ async function PoolsMenu() {
   const factory_contract = await PoolService.getFactoryContract();
 
   const pools = await PoolService.getPools();
-  if (factory_contract == null || pools === false)
+  if (factory_contract == null)
     return await ReturnMenu(chalk.red("Factory contract not found..."));
+
+  if (pools == false) return await ReturnMenu(chalk.red("Pools not found..."));
 
   const poolsChoices = pools.map(({ name }) => ({
     name: chalk.yellow(name), // tokenA / tokenB formatında

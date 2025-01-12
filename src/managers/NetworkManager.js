@@ -2,12 +2,12 @@ import pre_defined_networks from "../../viem/pre_defined_networks.json" assert {
 
 class NetworkManager {
   constructor() {
-    this.network = pre_defined_networks.find((ntw) => ntw.name === "testnet");
+    this.network = pre_defined_networks.find((ntw) => ntw.name === "sepolia");
     this.networks = pre_defined_networks;
   }
 
-  changeRPCUrl(url) {
-    this.network.url = url;
+  changeRPCUrl(network_name, url) {
+    this.networks.find((ntw) => ntw.name === network_name).url = url;
   }
 
   switchNetwork(network) {
@@ -19,7 +19,7 @@ class NetworkManager {
     return true;
   }
 
-  changeNetworkName(name) {
+  changeNetworkName(network, name) {
     const index = this.networks.findIndex((ntw) => ntw.name === network);
 
     if (index === -1) return false;

@@ -20,24 +20,32 @@ async function PoolMenu(pool_name, cb = () => {}) {
     {
       type: "list",
       name: "choice",
-      message: "Pool Menu",
+      message: "Pair Menu",
       choices: [
-        { name: "Swap", disabled: !AuthManager.isLoggedIn() },
-        { name: "Add Liquidity", disabled: !AuthManager.isLoggedIn() },
-        "Pool Info",
-        "Return Back",
+        {
+          name: chalk.blueBright("Swap"),
+          value: 0,
+          disabled: !AuthManager.isLoggedIn(),
+        },
+        {
+          name: chalk.green("Add Liquidity"),
+          value: 1,
+          disabled: !AuthManager.isLoggedIn(),
+        },
+        { name: "Pair Info", value: 2 },
+        { name: chalk.red("Return Back"), value: 100 },
       ],
     },
   ]);
 
   switch (choice) {
-    case "Swap":
+    case 0:
       await SwapMenu(pool_name);
       break;
-    case "Add Liquidity":
+    case 1:
       await AddLiquidityMenu(pool_name);
       break;
-    case "Pool Info":
+    case 2:
       return await PoolMenu(pool_name, () => {
         console.log(
           chalk.gray(
@@ -53,12 +61,16 @@ async function PoolMenu(pool_name, cb = () => {}) {
 
         console.log(
           `${chalk.blue.bold([pool.token0.symbol])}: ${chalk.yellow.bold([
-            pool.token0.balance,
+            (Number(pool.token0.balance) / 10 ** pool.token0.decimals).toFixed(
+              2
+            ) + "$",
           ])}`
         );
         console.log(
           `${chalk.blue.bold([pool.token1.symbol])}: ${chalk.yellow.bold([
-            pool.token1.balance,
+            (Number(pool.token1.balance) / 10 ** pool.token1.decimals).toFixed(
+              2
+            ) + "$",
           ])}`
         );
         console.log(`${chalk.blue.bold("k")}: ${chalk.yellow.bold([pool.k])}`);
@@ -69,7 +81,7 @@ async function PoolMenu(pool_name, cb = () => {}) {
         );
       });
 
-    case "Return Back":
+    case 100:
       return;
   }
 

@@ -1,26 +1,48 @@
 import inquirer from "inquirer";
 import NetworkManager from "../../managers/NetworkManager.js";
 
-async function NetworkMenu(network) {
+import chalk from "chalk";
+import SwitchNetworkMenu from "./switch_network_menu.js";
+import Header from "../Components/Header.js";
+import ReturnMenu from "../Components/return_menu.js";
+
+async function NetworkMenu(network_name) {
+  const network = NetworkManager.networks.find(
+    (ntw) => ntw.name === network_name
+  );
+
+  console.clear();
+  Header();
+
   const { choice } = await inquirer.prompt([
     {
       type: "list",
       name: "choice",
-      message: `Selected network: ${network}`,
+      message:
+        `Selected network: ${network.name}` +
+        `\n> RPC Url: ${
+          network.url == ""
+            ? chalk.red("*Empty...*")
+            : chalk.yellow(network.url)
+        }\n`,
       choices: [
-        "Switch Network",
-        "Change RPC Url",
-        "Change Name",
-        "Return Back",
+        {
+          name: chalk.yellowBright("Switch Network"),
+          value: 0,
+          disabled: "" === network.url,
+        },
+        { name: chalk.blueBright("Change RPC Url"), value: 1 },
+        { name: chalk.blueBright("Change Name"), value: 2 },
+        { name: chalk.red("Return Back"), value: 100 },
       ],
     },
   ]);
 
   switch (choice) {
-    case "Switch Network":
-      NetworkManager.switchNetwork(network);
+    case 0:
+      NetworkManager.switchNetwork(network.name);
       break;
-    case "Change RPC Url":
+    case 1:
       const { url } = await inquirer.prompt([
         {
           type: "input",
@@ -39,14 +61,17 @@ async function NetworkMenu(network) {
 
       if (!sure) break;
 
-      NetworkManager.changeRPCUrl(url);
+      console.log(NetworkManager.network.url);
+      NetworkManager.changeRPCUrl(network.name, url);
+      await ReturnMenu(`RPC Url changed to "${url}"`);
+
       break;
-    case "Change Name":
+    case 2:
       const { name } = await inquirer.prompt([
         {
           type: "input",
           name: "name",
-          message: `Enter the new network name: (${network})`,
+          message: `Enter the new network name: (${network.name})`,
         },
       ]);
 
@@ -60,9 +85,10 @@ async function NetworkMenu(network) {
 
       if (!sure2) break;
 
-      NetworkManager.changeNetworkName(network, name);
+      NetworkManager.changeNetworkName(network.name, name);
       break;
-    case "Return Back":
+    case 100:
+      await SwitchNetworkMenu();
       break;
   }
 }

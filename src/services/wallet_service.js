@@ -93,6 +93,22 @@ async function createWallet(private_key, wallet_key) {
   return new_wallet;
 }
 
+async function removeWallet(wallet_address) {
+  try {
+    let wallets = getWallets();
+    const index = wallets.findIndex((w) => w.address === wallet_address);
+
+    if (index === -1) return false;
+
+    wallets = wallets.filter((w) => w.address !== wallet_address);
+
+    fs.writeFileSync(wallet_file_address, JSON.stringify(wallets));
+    return true;
+  } catch (e) { 
+    return false;
+  }
+}
+
 async function getERC20TokenBalance(token_address) {
   const token = await getERC20Properties(token_address);
   const token_properties = token.__token_properties;
@@ -153,4 +169,5 @@ export default {
   getERC20TokenBalance,
   getTokenAddresses,
   addTokenAddress,
+  removeWallet,
 };
