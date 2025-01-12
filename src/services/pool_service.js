@@ -2,9 +2,12 @@ import { ViemPool } from "../../viem/functions/factory.js";
 import AuthManager from "../managers/AuthManager.js";
 
 async function getPools() {
-  const pools = await ViemPool.getPools();
-
-  return pools;
+  try {
+    const pools = await ViemPool.getPools();
+    return pools;
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 async function getPoolByName(pool_name) {
@@ -13,11 +16,14 @@ async function getPoolByName(pool_name) {
 }
 
 async function getFactoryContract() {
-  const factory = ViemPool.contract;
+  ViemPool.setAddress();
+  const factory = await ViemPool.getContract();
   try {
     await factory.read.feeTo();
     return factory.address;
-  } catch (error) {}
+  } catch (error) {
+    console.log(error);
+  }
   return null;
 }
 

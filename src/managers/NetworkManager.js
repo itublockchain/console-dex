@@ -1,4 +1,4 @@
-import pre_defined_networks from "../../viem/pre_defined_networks.json" assert { type: "json" };
+import pre_defined_networks from "../../storage/pre_defined_networks.json" assert { type: "json" };
 
 class NetworkManager {
   constructor() {

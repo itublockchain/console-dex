@@ -26,7 +26,7 @@ class ERC20 extends Contract {
 
   async getProperties() {
     try {
-      await this.getContract();
+      this.getContract();
 
       const name = await this.contract.read.name();
       this.name = name;
@@ -39,7 +39,7 @@ class ERC20 extends Contract {
 
       return { name, symbol, decimals, address: this.address };
     } catch (e) {
-      return false;
+      return console.log(e);
     }
   }
 
@@ -47,6 +47,7 @@ class ERC20 extends Contract {
     const tx = await this.contract.write.approve([`${target}`, amount]);
     return await this.waitForTransaction(tx);
   }
+
   async allowance(owner, spender) {
     return await this.contract.read.allowance([`${owner}`, `${spender}`]);
   }

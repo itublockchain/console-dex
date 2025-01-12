@@ -2,7 +2,7 @@ require("@nomicfoundation/hardhat-toolbox");
 require("@nomicfoundation/hardhat-verify");
 require("dotenv").config();
 
-const pre_defined_networks = require("../viem/pre_defined_networks.json");
+const pre_defined_networks = require("../storage/pre_defined_networks.json");
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -32,7 +32,7 @@ module.exports = {
       allowUnlimitedContractSize: true,
       confirmations: 5,
     },
-    local: {
+    testnet: {
       url: pre_defined_networks.find((ntw: any) => ntw.name === "testnet").url,
       accounts: [process.env.PRIVATE_KEY],
       allowUnlimitedContractSize: true,

@@ -2,7 +2,7 @@ import * as viem from "viem";
 import { ABI, networks } from "../utils/utils.js";
 import NetworkManager from "../../src/managers/NetworkManager.js"; // NetworkManager'ı burada import edin
 
-import addresses from "../addresses.json" assert { type: "json" };
+import addresses from "../../storage/addresses.json" assert { type: "json" };
 
 class Contract {
   constructor(address) {
@@ -15,6 +15,9 @@ class Contract {
 
   getContract({ walletClient } = { walletClient: this.usePublicClient() }) {
     if (this.address == null) return "No Contract";
+
+    this.publicClient = this.usePublicClient();
+
     this.contract = viem.getContract({
       address: `${this.address}`,
       abi: ABI[this.contract_name],
@@ -33,8 +36,10 @@ class Contract {
   setAddress() {
     try {
       this.address = addresses[NetworkManager.network.name][this.contract_name];
+      this.publicClient = this.usePublicClient();
       return true;
-    } catch {
+    } catch (e) {
+      console.error("error!", e);
       return false;
     }
   }

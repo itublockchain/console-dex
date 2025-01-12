@@ -8,21 +8,24 @@ class Factory extends Contract {
     super();
 
     this.contract_name = "factory";
+
     this.setAddress();
     this.getContract();
-    console.log(this.address);
   }
 
   async getPoolContract(pair_address) {
     const contract = new Pool(pair_address);
-    await this.setAddress();
+    this.getContract();
+
     await contract.initializeFactory();
     return contract.getContract();
   }
 
   async getPools() {
     try {
-      await this.setAddress();
+      this.setAddress();
+      this.getContract();
+
       const pair_length = await this.contract.read.allPairsLength();
       let pairs = [];
 
@@ -71,6 +74,7 @@ class Factory extends Contract {
 
   async addLiquidity(pool_address, token_address, token_amount, private_key) {
     try {
+      this.getContract();
       return await Router.addLiquidity(
         pool_address,
         token_address,
@@ -85,6 +89,7 @@ class Factory extends Contract {
 
   async swap(pool_address, token_in_address, amount_in, private_key) {
     try {
+      this.getContract();
       // Validate parameters
       if (!pool_address || !token_in_address || !amount_in || !private_key) {
         throw new Error("Invalid parameters for swap.");
@@ -102,7 +107,7 @@ class Factory extends Contract {
         private_key
       );
 
-      console.log(`Swap successful: ${JSON.stringify(result)}`);
+      console.log(`Swap successful: ${result.transactionHash}`);
       return result;
     } catch (error) {
       console.error("Pool swap error:", error);

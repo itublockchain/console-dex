@@ -10,7 +10,7 @@ class Pool extends Contract {
   }
 
   async initializeFactory() {
-    this.factory = await Factory.getContract();
+    this.factory = Factory.getContract();
     return this.factory;
   }
 }

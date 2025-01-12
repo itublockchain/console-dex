@@ -7,7 +7,7 @@ const createPool = require("../units/createPool");
 const deployWETH = require("../units/deployWETH");
 const deployRouter = require("../units/deployRouter");
 const addLiquidity = require("../units/addLiquidity");
-const deploySwap = require("../units/deploySwap");
+const { hardhat } = require("viem/chains");
 
 async function main() {
   try {
@@ -61,15 +61,6 @@ async function main() {
     // Add liquidity
     await addLiquidity(token0, token1, router, deployer);
 
-    // Deploy swap contract and perform test swap
-    const { swapAddress } = await deploySwap(
-      routerAddress,
-      wethAddress,
-      token0,
-      token1,
-      deployer
-    );
-
     // Save deployment info
     const deployments = {
       token0: token0Address,
@@ -78,15 +69,43 @@ async function main() {
       router: routerAddress,
       weth: wethAddress,
       pair: pairAddress,
-      swap: swapAddress,
     };
 
-    fs.writeFileSync("./addresses.json", JSON.stringify(deployments, null, 2));
+    await writeDeployments(deployments);
 
     console.log("Deployment addresses:", deployments);
   } catch (error) {
     console.error("Error during deployment:", error);
     process.exit(1);
+  }
+}
+
+async function writeDeployments(deployments) {
+  try {
+    const file_data = fs.readFileSync("../storage/addresses.json", "utf-8");
+    const file = JSON.parse(file_data);
+
+    const network = await ethers.provider.getNetwork();
+
+    file[network.name] = deployments;
+
+    fs.writeFileSync(
+      "../storage/addresses.json",
+      JSON.stringify(file, null, 2)
+    );
+  } catch (err) {
+    fs.writeFileSync(
+      "../storage/addresses.json",
+      JSON.stringify(
+        {
+          sepolia: {},
+          testnet: {},
+          holesky: {},
+        },
+        null,
+        2
+      )
+    );
   }
 }
 

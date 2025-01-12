@@ -6,7 +6,6 @@ import Contract from "./Contract_Base.js";
 import ERC20 from "./ERC20.js";
 
 import NetworkManager from "../../src/managers/NetworkManager.js";
-import Swap from "./swap_contract.js";
 
 class Router extends Contract {
   constructor() {
@@ -22,16 +21,20 @@ class Router extends Contract {
         throw new Error("Invalid parameters for swap.");
       }
 
+      // Initialize router contract
+      this.setAddress();
+
       const account = privateKeyToAccount(private_key);
       const walletClient = await viem.createWalletClient({
         account,
         transport: networks()[NetworkManager.network.name].transport,
       });
 
-      // Get the pool contract
+      this.getContract({ walletClient });
+
+      // Get the pool contract to find token addresses
       const pair = new Pool(pool_address);
       const pair_contract = await pair.getContract({ walletClient });
-      console.log(pair_contract);
 
       // Get token addresses
       const token0 = await pair_contract.read.token0();
@@ -40,33 +43,22 @@ class Router extends Contract {
       // Determine token_out_address
       const token_out_address = token_in_address === token0 ? token1 : token0;
 
+      // Initialize token contract and approve
       const token_in = new ERC20(token_in_address);
-      await token_in.getContract({ walletClient });
-
-      // Approve the pool contract to spend the specified amount of token_in
-      await token_in.contract.write.approve([pool_address, amount_in]);
-
-      const reserves = await pair_contract.read.getReserves();
-      const [reserve_in, reserve_out] =
-        token_in_address === token0
-          ? [reserves[0], reserves[1]]
-          : [reserves[1], reserves[0]];
+      token_in.getContract({ walletClient });
 
       const amount_in_bigint = BigInt(amount_in);
-      const swap = new Swap();
 
-      /*
-        uint256 amountIn,
-        uint256 amountOutMin,
-        address token0,
-        address token1
-      **********************/
+      // Approve the router contract to spend the tokens
+      await token_in.contract.write.approve([this.address, amount_in_bigint]);
 
-      const tx = await swap.contract.write.swapSingleHopExactAmountIn([
+      // Execute the swap
+      const tx = await this.contract.write.swapExactTokensForTokens([
         amount_in_bigint,
         (amount_in_bigint * 95n) / 100n, // %5 Slippage
-        token_in_address,
-        token_out_address,
+        [token_in_address, token_out_address],
+        account.address,
+        Math.floor(Date.now() / 1000) + 3600,
       ]);
 
       const receipt = await this.publicClient.waitForTransactionReceipt({
@@ -77,21 +69,18 @@ class Router extends Contract {
         throw new Error("Transaction failed");
       }
 
-      console.log("Swap successful:", {
-        amountIn: amount_in,
-        amountOut: amount_out.toString(),
-      });
-
       return receipt;
     } catch (error) {
       console.error("Swap error:", error);
-      return error;
+      throw error;
     }
   }
 
   // Add Liquidity
   async addLiquidity(pool_address, token_address, token_amount, private_key) {
     try {
+      this.setAddress();
+
       const account = privateKeyToAccount(private_key);
       const walletClient = viem.createWalletClient({
         account: account,
@@ -161,7 +150,6 @@ class Router extends Contract {
       if (mainBalance < parsedAmount) {
         throw new Error(`Insufficient ${main_token.symbol} balance`);
       }
-
       const otherBalance = await other_token_contract.balanceOf(
         account.address
       );
@@ -196,12 +184,6 @@ class Router extends Contract {
       if (mainBalanceAfter < parsedAmount) {
         throw new Error(`Insufficient ${main_token.symbol} balance`);
       }
-
-      console.log(
-        "Transaction successful.",
-        `${main_token.symbol}:`,
-        mainBalanceAfter
-      );
 
       return true;
     } catch (error) {

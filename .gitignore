@@ -21,6 +21,6 @@ backend/.env
 backend/ignition/deployments/chain-31337
 
 # Ignore wallets
-/src/wallets.json
-/src/tokens.json
-/src/networks.json
+/storage/wallets.json
+/storage/tokens.json
+/storage/networks.json

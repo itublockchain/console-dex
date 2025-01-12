@@ -6,7 +6,7 @@
   "scripts": {
     "test": "hardhat test",
     "verify": "npx hardhat run scripts/UniswapV2_Deploy_and_verify.js --network holesky",
-    "deploy-local": "npx hardhat run scripts/deploy.js --network local",
+    "deploy-testnet": "npx hardhat run scripts/deploy.js --network testnet",
     "deploy-sepolia": "npx hardhat run scripts/deploy.js --network sepolia",
     "deploy-holesky": "npx hardhat run scripts/deploy.js --network holesky"
   },

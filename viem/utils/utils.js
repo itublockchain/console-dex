@@ -9,7 +9,7 @@ import factory from "../ABI/UniswapV2Factory.sol/UniswapV2Factory.json" assert {
 import pair from "../ABI/UniswapV2Pair.sol/UniswapV2Pair.json" assert { type: "json" };
 import ERC20 from "../ABI/MockERC20.sol/MockERC20.json" assert { type: "json" };
 import router from "../ABI/UniswapV2Router02.sol/UniswapV2Router02.json" assert { type: "json" };
-import flashSwap from "../ABI/FlashSwapExample.sol/FlashSwapExample.json" assert { type: "json" };
+import swap from "../ABI/UniswapV2Swap.sol/UniswapV2SwapExamples.json" assert { type: "json" };
 
 import NetworkManager from "../../src/managers/NetworkManager.js";
 
@@ -24,7 +24,7 @@ const ABI = {
   pair: pair.abi,
   ERC20: ERC20.abi,
   router: router.abi,
-  flashSwap: flashSwap.abi,
+  swap: swap.abi,
 };
 
 let networks = () => {
