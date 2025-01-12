@@ -21,12 +21,14 @@ async function ListTokensMenu() {
   tokens = tokens.sort((tkn) => tkn.state == false);
 
   let unknowns = tokens.filter((tkn) => tkn.state == false);
-  unknowns[0].name = `Not in this network (${unknowns.length} token${
-    unknowns.length > 1 ? "s" : ""
-  })`;
+  if (unknowns.length > 0) {
+    unknowns[0].name = `Not in this network (${unknowns.length} token${
+      unknowns.length > 1 ? "s" : ""
+    })`;
 
-  tokens = tokens.filter((tkn) => tkn.state != false);
-  tokens.push(unknowns[0]);
+    tokens = tokens.filter((tkn) => tkn.state != false);
+    tokens.push(unknowns[0]);
+  }
 
   const choices_of_tokens = [
     { name: chalk.red("Return Back"), value: false },

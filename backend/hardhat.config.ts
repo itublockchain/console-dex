@@ -25,12 +25,12 @@ module.exports = {
       confirmations: 5,
     },
     sepolia: {
-      url: pre_defined_networks.sepolia.url,
+      url: pre_defined_networks.find((ntw: any) => ntw.name === "sepolia").url,
       accounts: [process.env.PRIVATE_KEY],
       allowUnlimitedContractSize: true,
     },
     local: {
-      url: pre_defined_networks.testnet.url,
+      url: pre_defined_networks.find((ntw: any) => ntw.name === "testnet").url,
       accounts: [process.env.PRIVATE_KEY],
       allowUnlimitedContractSize: true,
     },

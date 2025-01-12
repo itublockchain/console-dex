@@ -16,7 +16,7 @@ async function PoolsMenu() {
     return await ReturnMenu(chalk.red("Factory contract not found..."));
 
   const poolsChoices = pools.map(({ name }) => ({
-    name, // tokenA / tokenB formatında
+    name: chalk.yellow(name), // tokenA / tokenB formatında
     value: name, // Seçim değeri olarak pool id'si
   }));
 
@@ -26,9 +26,13 @@ async function PoolsMenu() {
       name: "choice",
       message: "Pools Menu",
       choices: [
+        {
+          name: chalk.green("Create Pair"),
+          value: "Create Pair",
+          disabled: !AuthManager.isLoggedIn(),
+        },
+        { name: chalk.red("Return Back"), value: "Return Back" },
         ...poolsChoices,
-        { name: "Create Pair", disabled: !AuthManager.isLoggedIn() },
-        "Return Back",
       ],
     },
   ]);

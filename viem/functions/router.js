@@ -4,6 +4,8 @@ import Pool from "./pool.js";
 import Contract from "./Contract_Base.js";
 import ERC20 from "./ERC20.js";
 
+import NetworkManager from "../../src/managers/NetworkManager.js";
+
 class Router extends Contract {
   constructor() {
     super();

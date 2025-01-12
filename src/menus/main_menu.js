@@ -78,7 +78,18 @@ export default async function MainMenu() {
         },
       ]);
 
-      await AuthManager.login(private_key, wallet_password);
+      try {
+        await AuthManager.login(private_key, wallet_password);
+      } catch (error) {
+        await inquirer.prompt([
+          {
+            type: "list",
+            name: "ans",
+            message: "Wrong private key!",
+            choices: [{ name: chalk.red("Return Back"), value: "Return Back" }],
+          },
+        ]);
+      }
       break;
     case "Disconnect":
       await AuthManager.disconnect();
