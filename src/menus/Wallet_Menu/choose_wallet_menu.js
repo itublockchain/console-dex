@@ -14,7 +14,7 @@ export default async function ChooseWalletMenu() {
   console.clear();
   Header();
 
-  const wallets = AuthManager.getWallets();
+  const wallets = await AuthManager.getWallets();
 
   // Format wallet choices with icons and addresses
   const walletChoices = wallets.map((wallet, index) => ({

@@ -2,6 +2,7 @@
 import WalletService from "../services/wallet_service.js";
 import { privateKeyToPublicKey } from "../../viem/utils/utils.js";
 import wrap from "../utils/wrap_async.js";
+import StorageManager from './StorageManager.js';
 
 import chalk from "chalk";
 
@@ -62,8 +63,14 @@ class AuthManager {
     return this.current_wallet;
   }
 
-  getWallets() {
-    return WalletService.getWallets();
+  async getWallets() {
+    return StorageManager.getWallets();
+  }
+
+  async saveWallet(wallet) {
+    const wallets = await this.getWallets();
+    wallets.push(wallet);
+    StorageManager.saveWallets(wallets);
   }
 
   getWalletPassword() {

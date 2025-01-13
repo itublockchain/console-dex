@@ -19,7 +19,7 @@ async function MyWalletMenu() {
   console.clear();
   Header();
 
-  const wallets = WalletService.getWallets();
+  const wallets = await WalletService.getWallets();
   const currentWallet = AuthManager.current_wallet;
 
   console.log(chalk.blue.bold("\nWallet Information"));
