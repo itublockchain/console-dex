@@ -17,12 +17,12 @@ class Contract {
     this.publicClient = this.usePublicClient();
 
     const client = walletClient || this.publicClient;
-    
+
     this.contract = viem.getContract({
       address: this.address,
       abi: ABI[this.contract_name],
       client,
-      account
+      account,
     });
 
     return this.contract;
@@ -75,7 +75,6 @@ class Contract {
       // Execute read operation
       return await this.contract.read[functionName](args);
     } catch (error) {
-      console.error(`Error in read operation ${functionName}:`, error);
       throw error;
     }
   }

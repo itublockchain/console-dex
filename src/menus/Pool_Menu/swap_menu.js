@@ -27,7 +27,7 @@ async function SwapMenu(pool_name) {
   );
 
   // Get token balances
-  const userAddress = await AuthManager.getCurrentWallet();
+  const userAddress = await AuthManager.getAddress();
   const balance0 = await tokenService.getTokenBalance(
     pool.token0.address,
     userAddress
@@ -126,26 +126,42 @@ async function SwapMenu(pool_name) {
   if (priceImpactData) {
     console.log(chalk.yellow("\n📊 Swap Details:"));
     console.log(
-      chalk.cyan(`Amount Out: ${priceImpactData.amountOut.toFixed(6)} ${targetToken.symbol}`)
+      chalk.cyan(
+        `Amount Out: ${priceImpactData.amountOut.toFixed(6)} ${
+          targetToken.symbol
+        }`
+      )
     );
     console.log(
-      chalk.cyan(`Price Impact: ${Math.abs(priceImpactData.priceImpact).toFixed(2)}%`)
+      chalk.cyan(
+        `Price Impact: ${Math.abs(priceImpactData.priceImpact).toFixed(2)}%`
+      )
     );
-    
+
     // Warning for high price impact
     if (Math.abs(priceImpactData.priceImpact) > 5) {
       console.log(
-        chalk.red("\n⚠️  Warning: High price impact! This trade will significantly affect the price.")
+        chalk.red(
+          "\n⚠️  Warning: High price impact! This trade will significantly affect the price."
+        )
       );
     }
 
     // Show price change
     console.log(chalk.yellow("\n💹 Price Change:"));
     console.log(
-      chalk.cyan(`Before: 1 ${selectedToken.symbol} = ${priceImpactData.currentPrice.toFixed(6)} ${targetToken.symbol}`)
+      chalk.cyan(
+        `Before: 1 ${
+          selectedToken.symbol
+        } = ${priceImpactData.currentPrice.toFixed(6)} ${targetToken.symbol}`
+      )
     );
     console.log(
-      chalk.cyan(`After:  1 ${selectedToken.symbol} = ${priceImpactData.newPrice.toFixed(6)} ${targetToken.symbol}`)
+      chalk.cyan(
+        `After:  1 ${selectedToken.symbol} = ${priceImpactData.newPrice.toFixed(
+          6
+        )} ${targetToken.symbol}`
+      )
     );
   }
 
@@ -154,8 +170,8 @@ async function SwapMenu(pool_name) {
       type: "confirm",
       name: "confirm",
       message: chalk.yellow("\nDo you want to proceed with this swap?"),
-      default: false
-    }
+      default: false,
+    },
   ]);
 
   if (!confirm) {

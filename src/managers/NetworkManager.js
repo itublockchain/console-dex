@@ -6,6 +6,10 @@ class NetworkManager {
     this.networks = pre_defined_networks;
   }
 
+  getCurrentNetwork() {
+    return this.network ? this.network.name : "Not Connected";
+  }
+
   changeRPCUrl(network_name, url) {
     this.networks.find((ntw) => ntw.name === network_name).url = url;
   }

@@ -5,45 +5,114 @@ import NetworkMenu from "./network_menu.js";
 import NetworkManager from "../../managers/NetworkManager.js";
 import Header from "../Components/Header.js";
 
-async function SwitchNetworkMenu() {
-  const choices = [
-    chalk.green("Add Network"),
-    chalk.red("Return Back"),
-    ...NetworkManager.networks.map(({ name }) => name),
-  ];
+const NETWORK_ICONS = {
+  CURRENT: "✓",
+  BACK: "←",
+};
 
+async function SwitchNetworkMenu() {
   console.clear();
   Header();
+
+  // Get current network
+  const currentNetwork = NetworkManager.getCurrentNetwork();
+
+  // Create network choices with current network indicator
+  const networkChoices = NetworkManager.networks.map(({ name }) => ({
+    name: `${name === currentNetwork ? NETWORK_ICONS.CURRENT : " "} ${
+      name === currentNetwork
+        ? chalk.yellow(name.charAt(0).toUpperCase() + name.slice(1))
+        : chalk.white(name.charAt(0).toUpperCase() + name.slice(1))
+    }`,
+    value: name,
+    short: name,
+  }));
+
+  // Add management options
+  const managementChoices = [
+    {
+      name: `  ${chalk.greenBright("Add New Network")}`,
+      value: "ADD_NETWORK",
+    },
+    {
+      name: chalk.red(`${NETWORK_ICONS.BACK} Return Back`),
+      value: "BACK",
+    },
+  ];
 
   const { choice } = await inquirer.prompt([
     {
       type: "list",
       name: "choice",
-      message: chalk.gray(
-        "Network Menu, please select a network to configure or select network:\n"
-      ),
-      choices,
+      message: chalk.blue("Select a network to connect:"),
+      pageSize: 10,
+      choices: [
+        new inquirer.Separator(chalk.dim("═══ Available Networks ═══")),
+        ...networkChoices,
+        new inquirer.Separator(chalk.dim("═══ Management ═══")),
+        ...managementChoices,
+      ],
     },
   ]);
 
   switch (choice) {
-    case chalk.green("Add Network"):
-      const { network } = await inquirer.prompt([
+    case "ADD_NETWORK":
+      const { networkName, rpcUrl } = await inquirer.prompt([
         {
           type: "input",
-          name: "network",
-          message: chalk.green("Enter the network name:"),
+          name: "networkName",
+          message: chalk.green("Enter network name:"),
+          validate: (input) => {
+            if (!input.trim()) return "Network name cannot be empty";
+            if (
+              NetworkManager.networks.some(
+                (n) => n.name.toLowerCase() === input.toLowerCase()
+              )
+            ) {
+              return "Network already exists";
+            }
+            return true;
+          },
+        },
+        {
+          type: "input",
+          name: "rpcUrl",
+          message: chalk.green("Enter RPC URL:"),
+          validate: (input) => {
+            if (!input.trim()) return "RPC URL cannot be empty";
+            try {
+              new URL(input);
+              return true;
+            } catch {
+              return "Please enter a valid URL";
+            }
+          },
         },
       ]);
 
-      console.log(chalk.gray("Network added..."), chalk.yellow(network));
-      NetworkManager.networks.push({ name: network, url: "" });
-      await SwitchNetworkMenu();
-      break;
-    case chalk.red("Return Back"):
-      break;
+      NetworkManager.networks.push({
+        name: networkName.trim(),
+        url: rpcUrl.trim(),
+      });
+      console.log(chalk.green("\n✓ Network added successfully!"));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      return await SwitchNetworkMenu();
+
+    case "BACK":
+      return;
+
     default:
-      await NetworkMenu(choice);
+      // Switch to selected network
+      if (choice === currentNetwork) {
+        console.log(chalk.yellow("\nℹ Already connected to this network"));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        return await SwitchNetworkMenu();
+      }
+
+      NetworkManager.switchNetwork(choice);
+      console.log(chalk.green(`\n✓ Successfully switched to ${choice}`));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      return;
   }
 }
 

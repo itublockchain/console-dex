@@ -2,91 +2,124 @@ import inquirer from "inquirer";
 import chalk from "chalk";
 
 import AuthManager from "../managers/AuthManager.js";
+import NetworkManager from "../managers/NetworkManager.js";
 import ItuScanMenu from "./Components/dex_scan_menu.js";
-import WalletMenu from "./Wallet_Menu/wallet_menu.js";
 import PoolsMenu from "./Pool_Menu/pools_menu.js";
+import MyWalletMenu from "./Wallet_Menu/my_wallet_menu.js";
 import ChooseWalletMenu from "./Wallet_Menu/choose_wallet_menu.js";
 import SwitchNetworkMenu from "./Network_Menu/switch_network_menu.js";
 
 import Header from "./Components/Header.js";
 import WalletService from "../services/wallet_service.js";
-import AddWalletMenu from "./Wallet_Menu/add_wallet_menu.js";
+
+const MENU_ICONS = {
+  WALLET: "💼",
+  POOLS: "🏊",
+  NETWORK: "🌐",
+  EXIT: "🚪",
+  DISCONNECT: "🔌",
+  CONNECT: "🔗",
+};
 
 export default async function MainMenu() {
   console.clear();
 
-  const choices = [
+  // Get current network and wallet info
+  const currentNetwork = NetworkManager.getCurrentNetwork();
+  const capitalizedNetwork =
+    currentNetwork.charAt(0).toUpperCase() + currentNetwork.slice(1);
+  const currentWallet = AuthManager.isLoggedIn()
+    ? AuthManager.getAddress().slice(0, 6) +
+      "..." +
+      AuthManager.getAddress().slice(-4)
+    : "Not Connected";
+
+  // Create sections for better organization
+  const mainSection = [
     {
-      name: chalk.blue("Wallet"),
-      value: 0,
-      disabled: WalletService.getWallets().length !== 0,
+      name: `${MENU_ICONS.POOLS} ${chalk.cyan("Pools")} ${chalk.gray(
+        "- Trade & Provide Liquidity"
+      )}`,
+      value: "POOLS",
     },
-    { name: chalk.cyan("Pools"), value: 7 },
-    // Probably not gonna implemented.
-    //{ name: "ITUScan", value: 1, disabled: true },
   ];
 
-  Header();
+  const walletSection = [
+    {
+      name: `${MENU_ICONS.WALLET} ${chalk.blue("Wallets")}`,
+      value: "WALLETS",
+    },
+  ];
 
-  if (AuthManager.isLoggedIn()) {
-    choices.push({ name: "Disconnect", value: 2 });
-  } else if (AuthManager.getWallets().length > 0) {
-    choices.push({ name: "Choose Wallet", value: 3 });
+  if (!AuthManager.isLoggedIn()) {
+    walletSection.push({
+      name: `${MENU_ICONS.CONNECT} ${chalk.blue("Connect Wallet")}`,
+      value: "CONNECT_WALLET",
+    });
   } else {
-    choices.push({ name: "Initialize Wallet", value: 4 });
+    walletSection.push({
+      name: `${MENU_ICONS.DISCONNECT} ${chalk.yellow("Disconnect Wallet")}`,
+      value: "DISCONNECT",
+    });
   }
 
-  choices.push({
-    name: chalk.green(`Switch to other networks.`),
-    value: 5,
-  });
-  choices.push({ name: chalk.red("Exit (x)"), value: 6 });
+  const networkSection = [
+    {
+      name: `${MENU_ICONS.NETWORK} ${chalk.green("Switch Network")}`,
+      value: "SWITCH_NETWORK",
+    },
+  ];
+
+  const exitSection = [
+    {
+      name: `${MENU_ICONS.EXIT} ${chalk.red("Exit")}`,
+      value: "EXIT",
+    },
+  ];
+
+  // Display header
+  Header();
 
   const { choice } = await inquirer.prompt([
     {
       type: "list",
       name: "choice",
-      message: chalk.yellow("Main Menu\n"),
-      choices: choices
-        .map((ch) => {
-          ch.disabled = ch.disabled === false;
-          return ch;
-        })
-        .sort((a, b) => {
-          return (
-            (a.disabled === false ? -1 : 1) - (b.disabled === false ? -1 : 1)
-          );
-        }),
+      message: "", // Removed message for cleaner look
+      pageSize: 10,
+      choices: [
+        new inquirer.Separator(chalk.dim("═══ Main ═══")),
+        ...mainSection,
+        ...walletSection,
+        ...networkSection,
+        ...exitSection,
+      ],
     },
   ]);
 
   switch (choice) {
-    // Wallet
-    case 0:
-      await WalletMenu();
-      break;
-    // ITUScan
-    case 1:
-      await ItuScanMenu();
-      break;
-    // Pools
-    case 7:
+    case "POOLS":
       await PoolsMenu();
       break;
-    case 3:
+    case "CONNECT_WALLET":
       await ChooseWalletMenu();
       break;
-    case 4:
+    case "INIT_WALLET":
       await AddWalletMenu();
       break;
-    case 2:
+    case "WALLETS":
+      await MyWalletMenu();
+      break;
+    case "DISCONNECT":
       await AuthManager.disconnect();
       break;
-    case 5:
+    case "SWITCH_NETWORK":
       await SwitchNetworkMenu();
       break;
-    case 6:
-      return console.log("Exiting...");
+    case "EXIT":
+      console.log(
+        chalk.yellow("\nThank you for using Console DEX! Goodbye! 👋")
+      );
+      process.exit(0);
   }
 
   return await MainMenu();

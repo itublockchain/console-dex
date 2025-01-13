@@ -58,7 +58,7 @@ class AuthManager {
   }
 
   // Mevcut cüzdan adresini döndüren fonksiyon
-  getCurrentWallet() {
+  getAddress() {
     return this.current_wallet;
   }
 

@@ -7,7 +7,7 @@ import AddLiquidityMenu from "./add_liquidity_menu.js";
 import tokenService from "../../services/token_service.js";
 
 async function displayPoolInfo(pool) {
-  const userAddress = await AuthManager.getCurrentWallet();
+  const userAddress = await AuthManager.getAddress();
 
   // Get user balances
   const balance0 = userAddress

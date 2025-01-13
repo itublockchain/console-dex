@@ -9,9 +9,27 @@ class ERC20 extends Contract {
 
   async getProperties({ account, walletClient } = {}) {
     try {
-      const name = await this.read("name", [], { account, walletClient });
-      const symbol = await this.read("symbol", [], { account, walletClient });
-      const decimals = await this.read("decimals", [], { account, walletClient });
+      let name = "Unknown Token";
+      let symbol = "???";
+      let decimals = 18;
+
+      try {
+        name = await this.read("name", [], { account, walletClient });
+      } catch (error) {
+        // Token does not support name()
+      }
+
+      try {
+        symbol = await this.read("symbol", [], { account, walletClient });
+      } catch (error) {
+        // Token does not support symbol()
+      }
+
+      try {
+        decimals = await this.read("decimals", [], { account, walletClient });
+      } catch (error) {
+        // Token does not support decimals(), using default: 18
+      }
 
       return {
         name,
@@ -20,7 +38,6 @@ class ERC20 extends Contract {
         address: this.address,
       };
     } catch (error) {
-      console.error("Error getting token properties:", error);
       return null;
     }
   }
@@ -32,10 +49,12 @@ class ERC20 extends Contract {
   async getBalance(address, { account, walletClient } = {}) {
     try {
       const balance = await this.balanceOf(address, { account, walletClient });
-      const decimals = await this.read("decimals", [], { account, walletClient });
+      const decimals = await this.read("decimals", [], {
+        account,
+        walletClient,
+      });
       return Number(balance) / 10 ** decimals;
     } catch (error) {
-      console.error("Error getting balance:", error);
       return 0;
     }
   }
@@ -47,12 +66,11 @@ class ERC20 extends Contract {
       }
 
       console.log(`Approving ${amount} tokens for spender: ${spender}`);
-      
-      const tx = await this.write(
-        "approve",
-        [spender, amount],
-        { account, walletClient }
-      );
+
+      const tx = await this.write("approve", [spender, amount], {
+        account,
+        walletClient,
+      });
 
       console.log("Approval transaction hash:", tx);
       return await this.waitForTransaction(tx);
@@ -63,7 +81,10 @@ class ERC20 extends Contract {
   }
 
   async allowance(owner, spender, { account, walletClient } = {}) {
-    return await this.read("allowance", [owner, spender], { account, walletClient });
+    return await this.read("allowance", [owner, spender], {
+      account,
+      walletClient,
+    });
   }
 }
 
