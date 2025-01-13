@@ -8,6 +8,7 @@ import AuthManager from "../../managers/AuthManager.js";
 import Header from "../Components/Header.js";
 
 import CreatePairMenu from "./create_pair_menu.js";
+import MyPoolTokensMenu from "./my_pool_tokens_menu.js";
 
 const MENU_ICONS = {
   BACK: "←",
@@ -42,6 +43,13 @@ async function PoolsMenu() {
         : false,
     },
     {
+      name: chalk.yellow("  My Pool Tokens"),
+      value: "My Pool Tokens",
+      disabled: !AuthManager.isLoggedIn()
+        ? chalk.dim("Connect wallet to view tokens")
+        : false,
+    },
+    {
       name: `${MENU_ICONS.BACK} ${chalk.red("Return Back")}`,
       value: "Return Back",
     },
@@ -68,6 +76,10 @@ async function PoolsMenu() {
 
   if (choice === "Create Pair") {
     return await CreatePairMenu();
+  }
+
+  if (choice == "My Pool Tokens") {
+    return await MyPoolTokensMenu();
   }
 
   return;

@@ -7,7 +7,9 @@ import AddLiquidityMenu from "./add_liquidity_menu.js";
 import tokenService from "../../services/token_service.js";
 
 async function displayPoolInfo(pool) {
-  const userAddress = await AuthManager.getAddress();
+  const userAddress = AuthManager.isLoggedIn()
+    ? await AuthManager.getAddress()
+    : null;
 
   // Get user balances
   const balance0 = userAddress
@@ -60,21 +62,22 @@ async function displayPoolInfo(pool) {
   console.log();
 
   // User balances
-  if (userAddress) {
+  if (AuthManager.isLoggedIn() && userAddress) {
     console.log(chalk.yellow.bold("💰 Your Balances"));
     console.log(
       chalk.blue(`${pool.token0.symbol}:`),
-      chalk.green(`${(Number(balance0) / 10 ** pool.token0.decimals).toFixed(4)}`)
+      chalk.green(balance0.toFixed(4))
     );
     console.log(
       chalk.blue(`${pool.token1.symbol}:`),
-      chalk.green(`${(Number(balance1) / 10 ** pool.token1.decimals).toFixed(4)}`)
+      chalk.green(balance1.toFixed(4))
     );
     console.log();
   }
-  
+
   console.log(chalk.gray("─".repeat(50)));
 }
+
 console.log(chalk.gray("─".repeat(50)));
 
 async function PoolMenu(pool_name, cached_data = null) {
@@ -126,6 +129,9 @@ async function PoolMenu(pool_name, cached_data = null) {
         break;
       case 1:
         await AddLiquidityMenu(pool_name);
+        break;
+      case 2:
+        await MyPoolTokensMenu(pool_name);
         break;
       case 100:
         return;
