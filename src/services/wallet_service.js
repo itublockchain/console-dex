@@ -1,6 +1,5 @@
 import fs from "fs";
-
-import { privateKeyToAccount } from "../../viem/utils/utils.js";
+import { privateKeyToAccount } from "viem/accounts";
 import { AES256_encrypt, AES256_decrypt } from "../utils/encryption_utils.js";
 import chalk from "chalk";
 
@@ -11,9 +10,6 @@ import StorageManager from '../managers/StorageManager.js';
 
 const wallet_file_address = import.meta
   .resolve("../../storage/wallets.json")
-  .slice(7);
-const tokens_file_address = import.meta
-  .resolve("../../storage/tokens.json")
   .slice(7);
 
 class WalletService {
@@ -152,26 +148,18 @@ class WalletService {
 
   static async getTokenAddresses() {
     try {
-      if (!fs.existsSync(tokens_file_address)) {
-        fs.writeFileSync(tokens_file_address, JSON.stringify([]), "utf-8");
-        return [];
-      }
-
-      const data = fs.readFileSync(tokens_file_address, "utf-8");
-      const tokens = JSON.parse(data) || [];
-      return tokens;
+      return await StorageManager.getTokens();
     } catch (e) {
-      fs.writeFileSync(tokens_file_address, JSON.stringify([]), "utf-8");
+      console.error("Error getting tokens:", e);
       return [];
     }
   }
 
   static async addTokenAddress(token_address) {
     try {
-      const tokens = await WalletService.getTokenAddresses();
+      const tokens = await StorageManager.getTokens();
 
       const index = tokens.findIndex((t) => t === token_address);
-
       if (index !== -1) return "Token already exists.";
 
       const token = await getERC20Properties(token_address);
@@ -183,8 +171,8 @@ class WalletService {
         };
 
       tokens.push(token_address);
-
-      fs.writeFileSync(tokens_file_address, JSON.stringify(tokens), "utf-8");
+      StorageManager.saveTokens(tokens);
+      
       return { ...token_properties, state: true };
     } catch (e) {
       return { state: false };
