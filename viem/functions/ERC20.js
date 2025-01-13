@@ -1,58 +1,90 @@
 import Contract from "./Contract_Base.js";
-/*
-        Example:
-    {
-        "tokenA": "0x3B20713Ac80ef6d28bA8F854BF077c4b591aF6a1",
-        "tokenB": "0xECE93e9d4f898084C979D8A27893d0C7D97874BF",
-        "factory": "0x9bE8AA384AD5e2a29F0684966846263B14cB08d6",
-        "router": "0xde79C6100d7a9F0E8a407e5fA3DB3c2Bfa71F160",
-        "pair": "0x040B7A24F2dD1a31a91895f07945fA33D55Fa067",
-        "weth": "0xD4265a24Bb3Fad3589d08b353be291F8Fd02efC5"
-    }
-*/
 
 class ERC20 extends Contract {
   constructor(address) {
-    super(address);
+    super();
     this.contract_name = "ERC20";
-    this.symbol = "";
-    this.name = "";
-    this.decimals = 1;
+    this.address = address;
   }
 
-  setSymbol(symbol) {
-    this.symbol = symbol;
-  }
-
-  async getProperties() {
+  async getProperties({ account, walletClient } = {}) {
     try {
-      await this.getContract();
+      let name = "Unknown Token";
+      let symbol = "???";
+      let decimals = 18;
 
-      const name = await this.contract.read.name();
-      this.name = name;
+      try {
+        name = await this.read("name", [], { account, walletClient });
+      } catch (error) {
+        // Token does not support name()
+      }
 
-      const symbol = await this.contract.read.symbol();
-      this.symbol = symbol;
+      try {
+        symbol = await this.read("symbol", [], { account, walletClient });
+      } catch (error) {
+        // Token does not support symbol()
+      }
 
-      const decimals = await this.contract.read.decimals();
-      this.decimals = decimals;
+      try {
+        decimals = await this.read("decimals", [], { account, walletClient });
+      } catch (error) {
+        // Token does not support decimals(), using default: 18
+      }
 
-      return { name, symbol, decimals, address: this.address };
-    } catch (e) {
-      return false;
+      return {
+        name,
+        symbol,
+        decimals,
+        address: this.address,
+      };
+    } catch (error) {
+      return null;
     }
   }
 
-  async approve(target, amount) {
-    const tx = await this.contract.write.approve([`${target}`, amount]);
-    return await this.waitForTransaction(tx);
-  }
-  async allowance(owner, spender) {
-    return await this.contract.read.allowance([`${owner}`, `${spender}`]);
+  async balanceOf(address, { account, walletClient } = {}) {
+    return await this.read("balanceOf", [address], { account, walletClient });
   }
 
-  async balanceOf(address) {
-    return await this.contract.read.balanceOf([`${address}`]);
+  async getBalance(address, { account, walletClient } = {}) {
+    try {
+      const balance = await this.balanceOf(address, { account, walletClient });
+      const decimals = await this.read("decimals", [], {
+        account,
+        walletClient,
+      });
+      return Number(balance) / 10 ** decimals;
+    } catch (error) {
+      return 0;
+    }
+  }
+
+  async approve(spender, amount, { account, walletClient } = {}) {
+    try {
+      if (!account) {
+        throw new Error("Account is required for approve operation");
+      }
+
+      console.log(`Approving ${amount} tokens for spender: ${spender}`);
+
+      const tx = await this.write("approve", [spender, amount], {
+        account,
+        walletClient,
+      });
+
+      console.log("Approval transaction hash:", tx);
+      return await this.waitForTransaction(tx);
+    } catch (error) {
+      console.error("Error approving tokens:", error);
+      throw error;
+    }
+  }
+
+  async allowance(owner, spender, { account, walletClient } = {}) {
+    return await this.read("allowance", [owner, spender], {
+      account,
+      walletClient,
+    });
   }
 }
 

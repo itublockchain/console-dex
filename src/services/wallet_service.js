@@ -8,8 +8,12 @@ import { wallet_passwords } from "../../index.js";
 import getERC20Properties from "../../viem/functions/getERC20Properties.js";
 import AuthManager from "../managers/AuthManager.js";
 
-const wallet_file_address = import.meta.resolve("../wallets.json").slice(7);
-const tokens_file_address = import.meta.resolve("../tokens.json").slice(7);
+const wallet_file_address = import.meta
+  .resolve("../../storage/wallets.json")
+  .slice(7);
+const tokens_file_address = import.meta
+  .resolve("../../storage/tokens.json")
+  .slice(7);
 
 function getWallets() {
   try {
@@ -75,6 +79,13 @@ async function createWallet(private_key, wallet_key) {
   const address = account.address;
   const public_key = account.publicKey;
 
+  // Check if wallet already exists
+  const wallets = getWallets();
+  const existingWallet = wallets.find((w) => w.address === address);
+  if (existingWallet) {
+    throw new Error("Wallet with this address already exists");
+  }
+
   const encrypted_private_key = AES256_encrypt(private_key, wallet_key);
 
   const new_wallet = {
@@ -84,8 +95,6 @@ async function createWallet(private_key, wallet_key) {
   };
 
   wallet_passwords.push({ address, wallet_key });
-
-  const wallets = getWallets();
   wallets.push(new_wallet);
 
   fs.writeFileSync(wallet_file_address, JSON.stringify(wallets));
@@ -93,23 +102,62 @@ async function createWallet(private_key, wallet_key) {
   return new_wallet;
 }
 
+async function removeWallet(wallet_address) {
+  try {
+    let wallets = getWallets();
+    const index = wallets.findIndex((w) => w.address === wallet_address);
+
+    if (index === -1) return false;
+
+    wallets = wallets.filter((w) => w.address !== wallet_address);
+
+    fs.writeFileSync(wallet_file_address, JSON.stringify(wallets));
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 async function getERC20TokenBalance(token_address) {
-  const token = await getERC20Properties(token_address);
-  const token_properties = token.__token_properties;
-  if (!token_properties)
+  try {
+    if (!AuthManager.current_wallet) {
+      return {
+        name: "No Wallet Selected",
+        state: false,
+      };
+    }
+
+    const token = await getERC20Properties(token_address);
+    const token_properties = token.__token_properties;
+    if (!token_properties) {
+      return {
+        name: "Unknown Token",
+        state: false,
+      };
+    }
+
+    try {
+      const balance = await token.getBalance(AuthManager.current_wallet);
+      return { ...token_properties, balance, state: true };
+    } catch (error) {
+      return { ...token_properties, balance: 0, state: false };
+    }
+  } catch (error) {
     return {
-      name: "Unknown Token",
+      name: "Error Loading Token",
       state: false,
     };
-
-  const balance = await token.balanceOf(AuthManager.current_wallet);
-  return { ...token_properties, balance, state: true };
+  }
 }
 
 async function getTokenAddresses() {
   try {
-    const data = fs.readFileSync(tokens_file_address, "utf-8");
+    if (!fs.existsSync(tokens_file_address)) {
+      fs.writeFileSync(tokens_file_address, JSON.stringify([]), "utf-8");
+      return [];
+    }
 
+    const data = fs.readFileSync(tokens_file_address, "utf-8");
     const tokens = JSON.parse(data) || [];
     return tokens;
   } catch (e) {
@@ -153,4 +201,5 @@ export default {
   getERC20TokenBalance,
   getTokenAddresses,
   addTokenAddress,
+  removeWallet,
 };

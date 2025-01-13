@@ -4,76 +4,139 @@ import SwapMenu from "./swap_menu.js";
 import AuthManager from "../../managers/AuthManager.js";
 import chalk from "chalk";
 import AddLiquidityMenu from "./add_liquidity_menu.js";
+import tokenService from "../../services/token_service.js";
 
-async function PoolMenu(pool_name, cb = () => {}) {
-  console.clear();
-  cb();
+async function displayPoolInfo(pool) {
+  const userAddress = AuthManager.isLoggedIn()
+    ? await AuthManager.getAddress()
+    : null;
 
-  const factory_contract = await PoolService.getFactoryContract();
+  // Get user balances
+  const balance0 = userAddress
+    ? await tokenService.getTokenBalance(pool.token0.address, userAddress)
+    : 0;
+  const balance1 = userAddress
+    ? await tokenService.getTokenBalance(pool.token1.address, userAddress)
+    : 0;
 
-  const pool = await PoolService.getPoolByName(pool_name);
+  // Calculate total value in pool
+  const token0Amount = Number(pool.token0.reserve) / 10 ** pool.token0.decimals;
+  const token1Amount = Number(pool.token1.reserve) / 10 ** pool.token1.decimals;
 
-  if (factory_contract == null || pool === false)
-    return await ReturnMenu(chalk.red("Factory contract not found..."));
+  // Calculate prices
+  const price0 = token1Amount / token0Amount;
+  const price1 = token0Amount / token1Amount;
 
-  const { choice } = await inquirer.prompt([
-    {
-      type: "list",
-      name: "choice",
-      message: "Pool Menu",
-      choices: [
-        { name: "Swap", disabled: !AuthManager.isLoggedIn() },
-        { name: "Add Liquidity", disabled: !AuthManager.isLoggedIn() },
-        "Pool Info",
-        "Return Back",
-      ],
-    },
-  ]);
+  console.log(chalk.blue.bold("\n🏊 Pool Information"));
+  console.log(chalk.gray("─".repeat(50)));
 
-  switch (choice) {
-    case "Swap":
-      await SwapMenu(pool_name);
-      break;
-    case "Add Liquidity":
-      await AddLiquidityMenu(pool_name);
-      break;
-    case "Pool Info":
-      return await PoolMenu(pool_name, () => {
-        console.log(
-          chalk.gray(
-            "----------------------------------------------------------------------------------------"
-          )
-        );
+  // Pool name and address
+  console.log(chalk.cyan("Name:"), chalk.white.bold(pool.name));
+  console.log(chalk.cyan("Address:"), chalk.white(pool.address));
+  console.log();
 
-        console.log(
-          chalk.blue.bold("Pool Name: "),
-          chalk.white.bold(pool.name),
-          "\n"
-        );
+  // Pool liquidity
+  console.log(chalk.yellow.bold("📊 Pool Liquidity"));
+  console.log(
+    chalk.blue(`${pool.token0.symbol}:`),
+    chalk.green(`${token0Amount.toFixed(4)}`),
+    chalk.gray(`(${pool.token0.address})`)
+  );
+  console.log(
+    chalk.blue(`${pool.token1.symbol}:`),
+    chalk.green(`${token1Amount.toFixed(4)}`),
+    chalk.gray(`(${pool.token1.address})`)
+  );
+  console.log();
 
-        console.log(
-          `${chalk.blue.bold([pool.token0.symbol])}: ${chalk.yellow.bold([
-            pool.token0.balance,
-          ])}`
-        );
-        console.log(
-          `${chalk.blue.bold([pool.token1.symbol])}: ${chalk.yellow.bold([
-            pool.token1.balance,
-          ])}`
-        );
-        console.log(`${chalk.blue.bold("k")}: ${chalk.yellow.bold([pool.k])}`);
-        console.log(
-          chalk.gray(
-            "----------------------------------------------------------------------------------------"
-          )
-        );
-      });
+  // Price information
+  console.log(chalk.yellow.bold("💱 Pool Metrics"));
+  console.log(
+    chalk.blue(`Price (${pool.token0.symbol}/${pool.token1.symbol}):`),
+    chalk.green(price0 ? price0.toFixed(6) : "N/A")
+  );
+  console.log(
+    chalk.blue(`Price (${pool.token1.symbol}/${pool.token0.symbol}):`),
+    chalk.green(price1 ? price1.toFixed(6) : "N/A")
+  );
+  console.log();
 
-    case "Return Back":
-      return;
+  // User balances
+  if (AuthManager.isLoggedIn() && userAddress) {
+    console.log(chalk.yellow.bold("💰 Your Balances"));
+    console.log(
+      chalk.blue(`${pool.token0.symbol}:`),
+      chalk.green(balance0.toFixed(4))
+    );
+    console.log(
+      chalk.blue(`${pool.token1.symbol}:`),
+      chalk.green(balance1.toFixed(4))
+    );
+    console.log();
   }
 
-  return await PoolMenu(pool_name);
+  console.log(chalk.gray("─".repeat(50)));
+}
+
+console.log(chalk.gray("─".repeat(50)));
+
+async function PoolMenu(pool_name, cached_data = null) {
+  // Eğer cache'lenmiş data yoksa bir kere çek
+  if (!cached_data) {
+    const factory_contract = await PoolService.getFactoryContract();
+    const pool = await PoolService.getPoolByName(pool_name);
+
+    if (factory_contract == null || pool === false)
+      return await ReturnMenu(chalk.red("Factory contract not found..."));
+
+    cached_data = { factory_contract, pool };
+  }
+
+  while (true) {
+    console.clear();
+
+    // Pool bilgilerini göster
+    await displayPoolInfo(cached_data.pool);
+
+    // Menüyü göster
+    const { choice } = await inquirer.prompt([
+      {
+        type: "list",
+        name: "choice",
+        message: chalk.green.bold("Select an action:"),
+        choices: [
+          {
+            name: chalk.blueBright("Swap Tokens"),
+            value: 0,
+            disabled: !AuthManager.isLoggedIn(),
+          },
+          {
+            name: chalk.green("Add Liquidity"),
+            value: 1,
+            disabled: !AuthManager.isLoggedIn(),
+          },
+          {
+            name: chalk.red("Return Back"),
+            value: 100,
+          },
+        ],
+      },
+    ]);
+
+    switch (choice) {
+      case 0:
+        await SwapMenu(pool_name);
+        break;
+      case 1:
+        await AddLiquidityMenu(pool_name);
+        break;
+      case 2:
+        await MyPoolTokensMenu(pool_name);
+        break;
+      case 100:
+        return;
+    }
+  }
 }
 
 export default PoolMenu;

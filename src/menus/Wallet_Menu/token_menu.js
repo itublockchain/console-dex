@@ -23,7 +23,7 @@ async function TokenMenu(token) {
     },
   ]);
 
-  return await ListTokensMenu();
+  return;
 }
 
 export default TokenMenu;
