@@ -5,8 +5,21 @@ import chalk from "chalk";
 
 class StorageManager {
   constructor() {
-    // ~/.config/console-dex dizinini oluştur
-    this.configDir = path.join(os.homedir(), ".config", "console-dex");
+    // Her platform için uygun config dizini
+    const isWindows = process.platform.startsWith("win");
+    const isMac = process.platform === "darwin";
+
+    let configBasePath;
+    if (isWindows) {
+      configBasePath = process.env.APPDATA; // Windows: AppData/Roaming
+    } else if (isMac) {
+      configBasePath = path.join(os.homedir(), "Library/Application Support"); // macOS: ~/Library/Application Support
+    } else {
+      configBasePath = path.join(os.homedir(), ".config"); // Linux: ~/.config
+    }
+
+    // Dizin yollarını platform bağımsız oluştur
+    this.configDir = path.join(configBasePath, "console-dex");
     this.walletsPath = path.join(this.configDir, "wallets.json");
     this.tokensPath = path.join(this.configDir, "tokens.json");
 
@@ -14,48 +27,72 @@ class StorageManager {
   }
 
   initializeStorage() {
-    // Ana dizini oluştur
-    if (!fs.existsSync(this.configDir)) {
-      fs.mkdirSync(this.configDir, { recursive: true });
-    }
+    try {
+      // Ana dizini oluştur
+      if (!fs.existsSync(this.configDir)) {
+        fs.mkdirSync(this.configDir, { recursive: true });
+      }
 
-    // Dosyaları oluştur veya kopyala
-    this.initializeFile(this.walletsPath, []);
-    this.initializeFile(this.tokensPath, []);
+      // Dosyaları oluştur veya kopyala
+      this.initializeFile(this.walletsPath, []);
+      this.initializeFile(this.tokensPath, []);
+    } catch (error) {
+      console.error(chalk.red("Error initializing storage:"), error);
+    }
   }
 
   initializeFile(filePath, defaultContent) {
-    if (!fs.existsSync(filePath)) {
-      fs.writeFileSync(filePath, JSON.stringify(defaultContent, null, 2));
+    try {
+      if (!fs.existsSync(filePath)) {
+        fs.writeFileSync(filePath, JSON.stringify(defaultContent, null, 2));
+      }
+    } catch (error) {
+      console.error(chalk.red(`Error initializing file ${filePath}:`), error);
     }
   }
 
   // Wallets
   saveWallets(wallets) {
-    fs.writeFileSync(this.walletsPath, JSON.stringify(wallets, null, 2));
+    try {
+      fs.writeFileSync(this.walletsPath, JSON.stringify(wallets, null, 2));
+    } catch (error) {
+      console.error(chalk.red("Error saving wallets:"), error);
+      throw error;
+    }
   }
 
   getWallets() {
     try {
+      if (!fs.existsSync(this.walletsPath)) {
+        return [];
+      }
       const data = fs.readFileSync(this.walletsPath, "utf8");
       return JSON.parse(data);
     } catch (error) {
-      console.error("Error reading wallets:", error);
+      console.error(chalk.red("Error reading wallets:"), error);
       return [];
     }
   }
 
   // Tokens
   saveTokens(tokens) {
-    fs.writeFileSync(this.tokensPath, JSON.stringify(tokens, null, 2));
+    try {
+      fs.writeFileSync(this.tokensPath, JSON.stringify(tokens, null, 2));
+    } catch (error) {
+      console.error(chalk.red("Error saving tokens:"), error);
+      throw error;
+    }
   }
 
   getTokens() {
     try {
+      if (!fs.existsSync(this.tokensPath)) {
+        return [];
+      }
       const data = fs.readFileSync(this.tokensPath, "utf8");
       return JSON.parse(data);
     } catch (error) {
-      console.error("Error reading tokens:", error);
+      console.error(chalk.red("Error reading tokens:"), error);
       return [];
     }
   }
@@ -63,7 +100,7 @@ class StorageManager {
   // Migration from old storage
   migrateFromOldStorage(oldStoragePath) {
     try {
-      // Eski dosyaları kontrol et ve kopyala
+      // Platform bağımsız yollar oluştur
       const oldWalletsPath = path.join(oldStoragePath, "wallets.json");
       const oldTokensPath = path.join(oldStoragePath, "tokens.json");
 
@@ -78,10 +115,10 @@ class StorageManager {
       }
 
       console.log(
-        chalk.green("✅ Successfully migrated storage to ~/.config/console-dex")
+        chalk.green("✅ Successfully migrated storage to config directory")
       );
     } catch (error) {
-      console.error("Error migrating old storage:", error);
+      console.error(chalk.red("Error migrating old storage:"), error);
     }
   }
 }
