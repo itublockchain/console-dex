@@ -1,7 +1,18 @@
-import * as viem from "viem";
 import { ABI, networks } from "../utils/utils.js";
+import { createPublicClient } from "viem";
 import NetworkManager from "../../src/managers/NetworkManager.js";
-import addresses from "../../storage/addresses.json" assert { type: "json" };
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+import * as viem from "viem";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const addresses = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "../../storage/addresses.json"))
+);
 
 class Contract {
   constructor(address) {
@@ -29,7 +40,7 @@ class Contract {
   }
 
   usePublicClient() {
-    return viem.createPublicClient({
+    return createPublicClient({
       transport: networks()[NetworkManager.network.name].transport,
     });
   }

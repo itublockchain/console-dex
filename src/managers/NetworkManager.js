@@ -1,4 +1,13 @@
-import pre_defined_networks from "../../storage/pre_defined_networks.json" assert { type: "json" };
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const pre_defined_networks = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "../../storage/pre_defined_networks.json"))
+);
 
 class NetworkManager {
   constructor() {

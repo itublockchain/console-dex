@@ -3,24 +3,37 @@
 import { Command } from "commander";
 import MainMenu from "./src/menus/main_menu.js";
 import wrap_async from "./src/utils/wrap_async.js";
+import StorageManager from './src/managers/StorageManager.js';
 
 // Sadece uygulama açıkken tutulacak bir veri.
 /*
   { address: "0xBsdBd...", wallet_key: "cokozelsifrem" }
 */
-export let wallet_passwords = [];
+export const wallet_passwords = [];
 
 // ConsoleDex Uygulamasını Başlatacak Komutlar...
-const ConsoleDex = new Command();
+const program = new Command();
 
-ConsoleDex.name("console-dex").version("1.0.0");
-ConsoleDex.command("start").action(async () => {
-  // Uygulamayı başlat
-  const [data, err] = await wrap_async(MainMenu());
+// Migrate old storage to new location
+StorageManager.migrateFromOldStorage('./storage');
 
-  if (!err) return;
+program
+  .name("console-dex")
+  .description("A console-based DEX application")
+  .version("1.0.0");
 
-  console.error("An error occurred:", err);
-});
+program
+  .command("start")
+  .description("Start the console-dex application")
+  .action(async () => {
+    try {
+      const [data, err] = await wrap_async(MainMenu());
+      if (err) {
+        console.error("An error occurred:", err);
+      }
+    } catch (error) {
+      console.error("Fatal error:", error);
+    }
+  });
 
-ConsoleDex.parse(process.argv);
+program.parse(process.argv);
