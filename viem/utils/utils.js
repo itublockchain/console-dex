@@ -48,7 +48,7 @@ let networks = () => {
   };
 };
 
-console.log(networks);
+networks()
 
 export {
   publicKeyToAddress,

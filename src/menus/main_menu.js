@@ -3,14 +3,13 @@ import chalk from "chalk";
 
 import AuthManager from "../managers/AuthManager.js";
 import NetworkManager from "../managers/NetworkManager.js";
-import ItuScanMenu from "./Components/dex_scan_menu.js";
+
 import PoolsMenu from "./Pool_Menu/pools_menu.js";
 import MyWalletMenu from "./Wallet_Menu/my_wallet_menu.js";
 import ChooseWalletMenu from "./Wallet_Menu/choose_wallet_menu.js";
 import SwitchNetworkMenu from "./Network_Menu/switch_network_menu.js";
 
 import Header from "./Components/Header.js";
-import WalletService from "../services/wallet_service.js";
 
 const MENU_ICONS = {
   WALLET: "💼",

@@ -26,48 +26,64 @@ class Factory extends Contract {
       this.setAddress();
       this.getContract();
 
-      const pair_length = await this.contract.read.allPairsLength();
-      let pairs = [];
+      const pair_length = Number(await this.contract.read.allPairsLength()); // BigInt'i number'a çevir
+      
+      // Önce tüm pair adreslerini paralel olarak al
+      const pairAddressPromises = Array.from({ length: pair_length }, (_, i) => 
+        this.contract.read.allPairs([i])
+      );
+      const pairAddresses = await Promise.all(pairAddressPromises);
 
-      for (let i = 0; i < pair_length; i++) {
-        const pair_address = await this.contract.read.allPairs([i]);
-        const pair = await this.getPoolContract(pair_address);
-        const reserves = await pair.read.getReserves();
+      // Her pair için gerekli bilgileri paralel olarak al
+      const pairPromises = pairAddresses.map(async (pair_address) => {
+        try {
+          const pair = await this.getPoolContract(pair_address);
+          const [
+            reserves,
+            token0Address,
+            token1Address
+          ] = await Promise.all([
+            pair.read.getReserves(),
+            pair.read.token0(),
+            pair.read.token1()
+          ]);
 
-        const token_0 = new ERC20(await pair.read.token0());
-        const token_1 = new ERC20(await pair.read.token1());
+          const [token0, token1] = await Promise.all([
+            new ERC20(token0Address).getProperties(),
+            new ERC20(token1Address).getProperties()
+          ]);
 
-        const token_0_properties = await token_0.getProperties();
-        const token_1_properties = await token_1.getProperties();
-        // { name, symbol, decimals, address }
+          // BigInt'leri güvenli bir şekilde number'a çevir
+          const reserve0 = reserves[0] ? Number(reserves[0].toString()) : 0;
+          const reserve1 = reserves[1] ? Number(reserves[1].toString()) : 0;
 
-        const reserve_0 = reserves[0];
-        const reserve_1 = reserves[1];
+          return {
+            name: `${token0.symbol} / ${token1.symbol}`,
+            k: reserve0 * reserve1,
+            address: pair_address,
+            token0: {
+              address: token0Address,
+              ...token0,
+              reserve: reserve0
+            },
+            token1: {
+              address: token1Address,
+              ...token1,
+              reserve: reserve1
+            }
+          };
+        } catch (err) {
+          console.error("Error processing pool:", pair_address, err);
+          return null;
+        }
+      });
 
-        pairs.push({
-          name: `${token_0_properties.symbol} / ${token_1_properties.symbol}`,
-          k: reserve_0 * reserve_1,
-          address: pair_address,
-          token0: {
-            address: token_0_properties.address,
-            name: token_0_properties.name,
-            symbol: token_0_properties.symbol,
-            decimals: token_0_properties.decimals,
-            balance: reserve_0,
-          },
-          token1: {
-            address: token_1_properties.address,
-            name: token_1_properties.name,
-            symbol: token_1_properties.symbol,
-            decimals: token_1_properties.decimals,
-            balance: reserve_1,
-          },
-        });
-      }
-
-      return pairs;
-    } catch (error) {
-      console.log(error);
+      const pools = await Promise.all(pairPromises);
+      // Hata alan pool'ları filtrele
+      return pools.filter(pool => pool !== null);
+      
+    } catch (err) {
+      console.error("Error in getPools:", err);
       return false;
     }
   }

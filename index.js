@@ -1,4 +1,5 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --no-warnings
+
 import { Command } from "commander";
 import MainMenu from "./src/menus/main_menu.js";
 import wrap_async from "./src/utils/wrap_async.js";

@@ -18,7 +18,7 @@ export default async function ChooseWalletMenu() {
 
   // Format wallet choices with icons and addresses
   const walletChoices = wallets.map((wallet, index) => ({
-    name: `  ${chalk.cyan(wallet.address)}`,
+    name: `   ${chalk.cyan(wallet.address)}`,
     value: index + 1,
     short: `Wallet ${index + 1}`,
   }));
@@ -26,7 +26,7 @@ export default async function ChooseWalletMenu() {
   // Add management options
   const managementChoices = [
     {
-      name: `${MENU_ICONS.BACK} ${chalk.red("Return Back")}`,
+      name: ` ${MENU_ICONS.BACK} ${chalk.red("Return Back")}`,
       value: "BACK",
     },
   ];
@@ -38,9 +38,9 @@ export default async function ChooseWalletMenu() {
       name: "choice",
       message: chalk.blue("\nSelect a wallet to connect:"),
       choices: [
-        new inquirer.Separator(chalk.dim("\n═══ Available Wallets ═══")),
+        new inquirer.Separator(chalk.dim("\n ═══ Available Wallets ═══")),
         ...walletChoices,
-        new inquirer.Separator(chalk.dim("\n═══ Management ═══")),
+        new inquirer.Separator(chalk.dim("═══ Management ═══")),
         ...managementChoices,
       ],
     },

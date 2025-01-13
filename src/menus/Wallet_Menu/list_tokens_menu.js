@@ -14,9 +14,10 @@ async function ListTokensMenu() {
 
   let tokens = await WalletService.getTokenAddresses();
 
-  for (let n in tokens) {
-    tokens[n] = await WalletService.getERC20TokenBalance(tokens[n]);
-  }
+  // Paralel olarak token bilgilerini çek
+  tokens = await Promise.all(
+    tokens.map((token) => WalletService.getERC20TokenBalance(token))
+  );
 
   // Unknown tokenları filtrele
   let unknownTokens = tokens.filter(
@@ -64,9 +65,10 @@ async function ListTokensMenu() {
     },
   ]);
 
-  if (token_address === false) return await WalletMenu();
-
-  await TokenMenu(tokens.find((token) => token.address === token_address));
+  if (token_address !== false)
+    return await TokenMenu(
+      tokens.find((token) => token.address === token_address)
+    );
 }
 
 export default ListTokensMenu;

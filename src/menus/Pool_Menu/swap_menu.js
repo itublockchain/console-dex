@@ -37,7 +37,7 @@ async function SwapMenu(pool_name) {
     userAddress
   );
 
-  console.log(chalk.yellow("\n📊 Current Prices:"));
+  console.log(chalk.yellow("📊 Current Prices:"));
   if (price0) {
     console.log(
       chalk.cyan(
