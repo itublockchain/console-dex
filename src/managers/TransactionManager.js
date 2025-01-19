@@ -16,12 +16,30 @@ async function swap(pool_name, token_in_address, amount) {
 }
 
 async function addLiquidity(pool_name, token0_address, amount0) {
-  const pool = await PoolService.getPoolByName(pool_name);
-
-  for (let token in pool) {
-    if (pool[token].address == token0_address) {
-      await PoolService.addLiquidity(pool.address, token0_address, amount0);
+  try {
+    const pool = await PoolService.getPoolByName(pool_name);
+    if (!pool) {
+      console.error("Pool not found");
+      return false;
     }
+
+    if (!token0_address || !amount0) {
+      console.error("Missing token address or amount");
+      return false;
+    }
+
+    // Validate token address exists in pool
+    const tokenFound = pool.token0.address === token0_address || pool.token1.address === token0_address;
+    if (!tokenFound) {
+      console.error("Token not found in pool");
+      return false;
+    }
+
+    const result = await PoolService.addLiquidity(pool.address, token0_address, amount0);
+    return result;
+  } catch (err) {
+    console.error("Transaction error:", err);
+    return false;
   }
 }
 

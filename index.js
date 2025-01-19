@@ -3,7 +3,8 @@
 import { Command } from "commander";
 import MainMenu from "./src/menus/main_menu.js";
 import wrap_async from "./src/utils/wrap_async.js";
-import StorageManager from './src/managers/StorageManager.js';
+import StorageManager from "./src/managers/StorageManager.js";
+import chalk from "chalk"; // Import chalk for colored console output
 
 // Sadece uygulama açıkken tutulacak bir veri.
 /*
@@ -15,7 +16,7 @@ export const wallet_passwords = [];
 const program = new Command();
 
 // Migrate old storage to new location
-StorageManager.migrateFromOldStorage('./storage');
+StorageManager.migrateFromOldStorage("./storage");
 
 program
   .name("console-dex")
@@ -29,6 +30,8 @@ program
     try {
       const [data, err] = await wrap_async(MainMenu());
       if (err) {
+        if (err.name === "ExitPromptError") exitApp();
+
         console.error("An error occurred:", err);
       }
     } catch (error) {
@@ -37,3 +40,17 @@ program
   });
 
 program.parse(process.argv);
+
+process.on("SIGINT", () => {
+  exitApp();
+});
+
+function exitApp() {
+  let console_dex = chalk.blue(`Console-Dex`);
+  console.clear();
+  console.log(
+    `\n${console_dex}'ten çıktınız.`,
+    chalk.yellow("Görüşürüz! 👋 \n")
+  );
+  process.exit(); // Uygulamayı düzgün kapat
+}

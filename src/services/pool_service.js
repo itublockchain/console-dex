@@ -9,9 +9,21 @@ import NetworkManager from "../managers/NetworkManager.js";
 
 async function getPools() {
   try {
-    return await ViemPool.getPools();
+    // Force contract refresh
+    await ViemPool.setAddress();
+    await ViemPool.getContract();
+
+    // Get fresh pools list
+    const pools = await ViemPool.getPools();
+
+    if (!pools || pools.length === 0) {
+      console.log("No pools found");
+      return [];
+    }
+
+    return pools;
   } catch (err) {
-    console.error(err);
+    console.error("Error getting pools:", err);
     return [];
   }
 }
@@ -20,18 +32,19 @@ async function getPoolByName(pool_name) {
   try {
     const pools = await getPools();
     if (!pools) return null;
-    
+
     // Check if pool_name is an address
-    const pool = pools.find(pool => 
-      pool.name === pool_name || 
-      pool.address.toLowerCase() === pool_name.toLowerCase()
+    const pool = pools.find(
+      (pool) =>
+        pool.name === pool_name ||
+        pool.address.toLowerCase() === pool_name.toLowerCase()
     );
-    
+
     if (!pool) {
       console.error(`Pool not found: ${pool_name}`);
       return null;
     }
-    
+
     return pool;
   } catch (err) {
     console.error("Error getting pool by name:", err);
@@ -62,16 +75,24 @@ async function addLiquidity(pool_name, token_address, token_amount) {
   try {
     const pool = await getPoolByName(pool_name);
     if (!pool) {
-      throw new Error(`Pool not found: ${pool_name}`);
+      console.error(`Pool not found: ${pool_name}`);
+      return false;
     }
 
     const private_key = await AuthManager.getPrivateKey();
-    return await ViemPool.addLiquidity(
+    if (!private_key) {
+      console.error("No private key available");
+      return false;
+    }
+
+    const result = await ViemPool.addLiquidity(
       pool.address,
       token_address,
       token_amount,
       private_key
     );
+
+    return result !== false;
   } catch (err) {
     console.error("Add liquidity error:", err);
     return false;
@@ -98,31 +119,87 @@ async function swap(pool_name, token_in_address, amount_in) {
     // Get router address
     const routerAddress = Router.address;
 
-    // Create token contract
-    const token = new ERC20(token_in_address);
-    
     // Create wallet client and account
     const private_key = await AuthManager.getPrivateKey();
     const { account, walletClient } = await createWalletClient(private_key);
-    
-    // Get decimals and calculate amount
-    const decimals = await token.read("decimals", [], { account, walletClient });
-    const amount_in_bigint = BigInt(amount_in) * BigInt(10 ** decimals);
 
-    console.log("Approving token transfer...");
-    await token.approve(routerAddress, amount_in_bigint, { account, walletClient });
+    // Create token contract and get properties
+    const token = new ERC20(token_in_address);
+    await token.getContract({ account, walletClient });
+    const tokenProps = await token.getProperties({ account, walletClient });
+
+    if (!tokenProps) {
+      throw new Error("Failed to get token properties");
+    }
+
+    // Calculate amount with decimals
+    const amount_in_bigint = BigInt(amount_in) * BigInt(10 ** tokenProps.decimals);
+
+    // Check token balance
+    const hasBalance = await token.hasEnoughBalance(account.address, amount_in_bigint, { account, walletClient });
+    if (!hasBalance) {
+      throw new Error(`Insufficient ${tokenProps.symbol} balance`);
+    }
+
+    // Check current allowance
+    const currentAllowance = await token.allowance(account.address, routerAddress, { account, walletClient });
+    console.log("Current allowance:", currentAllowance.toString());
+    
+    // If allowance is insufficient, approve
+    if (currentAllowance < amount_in_bigint) {
+      console.log(`Approving ${amount_in} ${tokenProps.symbol} for transfer...`);
+      
+      // First reset allowance if needed
+      if (currentAllowance > 0n) {
+        const resetTx = await token.contract.write.approve(
+          [routerAddress, 0n],
+          { account, walletClient }
+        );
+        await token.waitForTransaction(resetTx);
+        console.log("Reset allowance to 0");
+      }
+      
+      // Now set new allowance
+      const approveTx = await token.contract.write.approve(
+        [routerAddress, amount_in_bigint],
+        { account, walletClient }
+      );
+
+      const receipt = await token.waitForTransaction(approveTx);
+      if (!receipt) {
+        throw new Error("Approval transaction failed");
+      }
+      console.log("Token approval confirmed");
+    } else {
+      console.log("Sufficient allowance exists, skipping approval");
+    }
 
     // Execute swap
-    console.log("Executing swap...");
-    return await Router.swap(
+    console.log("Executing swap transaction...");
+    const txHash = await Router.swap(
       pool.address,
       token_in_address,
-      amount_in,
+      amount_in_bigint,
       private_key
     );
+
+    // Check if we got a transaction hash back
+    if (typeof txHash === 'string' && txHash.startsWith('0x')) {
+      console.log(`Swap transaction hash: ${txHash}`);
+      return true;
+    }
+    
+    // If we got false or null, transaction failed
+    if (!txHash) {
+      throw new Error("Swap transaction failed - no transaction hash returned");
+    }
+
+    // If we got something else unexpected
+    throw new Error(`Unexpected swap result: ${txHash}`);
+
   } catch (err) {
     console.error("Pool swap error:", err);
-    return false;
+    throw err;
   }
 }
 
@@ -144,12 +221,12 @@ async function calculatePriceImpact(pool_address, tokenIn_address, amountIn) {
     const pairContract = new Pool(pool.address);
     await pairContract.getContract();
     const reserves = await pairContract.contract.read.getReserves();
-    
+
     // Determine which token is being swapped
     const token0 = await pairContract.contract.read.token0();
     const token1 = await pairContract.contract.read.token1();
     const isToken0 = tokenIn_address.toLowerCase() === token0.toLowerCase();
-    
+
     // Get token contracts for decimals
     const token0Contract = new ERC20(token0);
     const token1Contract = new ERC20(token1);
@@ -158,53 +235,66 @@ async function calculatePriceImpact(pool_address, tokenIn_address, amountIn) {
 
     const token0Decimals = await token0Contract.contract.read.decimals();
     const token1Decimals = await token1Contract.contract.read.decimals();
-    
+
     // Convert reserves to proper decimals
-    const reserve0 = Number(reserves[0]) / (10 ** token0Decimals);
-    const reserve1 = Number(reserves[1]) / (10 ** token1Decimals);
-    
+    const reserve0 = Number(reserves[0]) / 10 ** token0Decimals;
+    const reserve1 = Number(reserves[1]) / 10 ** token1Decimals;
+
     // Calculate amount out using x * y = k formula
     const amountInWithFee = Number(amountIn) * 0.997; // 0.3% fee
-    
+
     if (isToken0) {
-      const amountOut = (reserve1 * amountInWithFee) / (reserve0 + amountInWithFee);
-      
+      const amountOut =
+        (reserve1 * amountInWithFee) / (reserve0 + amountInWithFee);
+
       // Calculate prices
       const currentPrice = reserve1 / reserve0;
       const newReserve0 = reserve0 + Number(amountIn);
       const newReserve1 = reserve1 - amountOut;
       const newPrice = newReserve1 / newReserve0;
-      
+
       // Calculate price impact
       const priceImpact = ((currentPrice - newPrice) / currentPrice) * 100;
-      
+
       return {
         priceImpact,
         amountOut,
         currentPrice,
-        newPrice
+        newPrice,
       };
     } else {
-      const amountOut = (reserve0 * amountInWithFee) / (reserve1 + amountInWithFee);
-      
+      const amountOut =
+        (reserve0 * amountInWithFee) / (reserve1 + amountInWithFee);
+
       // Calculate prices (inverse for token1)
       const currentPrice = reserve0 / reserve1;
       const newReserve1 = reserve1 + Number(amountIn);
       const newReserve0 = reserve0 - amountOut;
       const newPrice = newReserve0 / newReserve1;
-      
+
       // Calculate price impact
       const priceImpact = ((currentPrice - newPrice) / currentPrice) * 100;
-      
+
       return {
         priceImpact,
         amountOut,
         currentPrice,
-        newPrice
+        newPrice,
       };
     }
   } catch (error) {
     console.error("Calculate price impact error:", error);
+    return null;
+  }
+}
+
+async function getPoolReserves(pool_address) {
+  try {
+    const pool = new Pool(pool_address);
+    const reserves = await pool.getReserves();
+    return reserves;
+  } catch (err) {
+    console.error("Error getting pool reserves:", err);
     return null;
   }
 }
@@ -217,5 +307,6 @@ export default {
   addLiquidity,
   swap,
   getTokenPrice,
-  calculatePriceImpact
+  calculatePriceImpact,
+  getPoolReserves
 };

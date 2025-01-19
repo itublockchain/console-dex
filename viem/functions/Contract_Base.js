@@ -22,21 +22,25 @@ class Contract {
     this.publicClient = this.usePublicClient();
   }
 
-  getContract({ walletClient, account } = {}) {
+  getContract({ walletClient, account, test } = {}) {
     if (this.address == null) return "No Contract";
 
     this.publicClient = this.usePublicClient();
 
     const client = walletClient || this.publicClient;
 
-    this.contract = viem.getContract({
-      address: this.address,
-      abi: ABI[this.contract_name],
-      client,
-      account,
-    });
+    try {
+      this.contract = viem.getContract({
+        address: this.address,
+        abi: ABI[this.contract_name],
+        client,
+        account,
+      });
 
-    return this.contract;
+      return this.contract;
+    } catch (error) {
+      return null;
+    }
   }
 
   usePublicClient() {
@@ -51,19 +55,22 @@ class Contract {
       this.publicClient = this.usePublicClient();
       return true;
     } catch (e) {
-      console.error("error!", e);
       return false;
     }
   }
 
   async waitForTransaction(tx) {
-    return await this.publicClient.waitForTransactionReceipt({ hash: tx });
+    try {
+      return await this.publicClient.waitForTransactionReceipt({ hash: tx });
+    } catch (error) {
+      return null;
+    }
   }
 
   async write(functionName, args = [], { account, walletClient } = {}) {
     try {
       if (!account) {
-        throw new Error("Account is required for write operations");
+        return null;
       }
 
       // Initialize contract with wallet client and account if provided
@@ -73,20 +80,19 @@ class Contract {
       const tx = await this.contract.write[functionName](args, { account });
       return tx;
     } catch (error) {
-      console.error(`Error in write operation ${functionName}:`, error);
-      throw error;
+      return null;
     }
   }
 
-  async read(functionName, args = [], { account, walletClient } = {}) {
+  async read(functionName, args = [], { account, walletClient, test } = {}) {
     try {
       // Initialize contract with optional wallet client and account
       this.getContract({ walletClient, account });
 
-      // Execute read operation
+      // Execute read operation with args as array
       return await this.contract.read[functionName](args);
     } catch (error) {
-      throw error;
+      return null;
     }
   }
 }

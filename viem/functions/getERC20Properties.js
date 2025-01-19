@@ -6,9 +6,9 @@ class ERC20Properties extends ERC20 {
   }
 }
 
-export default async (address) => {
+export default async (address, { test } = {}) => {
   const token = new ERC20Properties(address);
-  token.__token_properties = await token.getProperties();
+  token.__token_properties = await token.getProperties({ test });
 
   return token;
 };

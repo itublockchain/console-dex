@@ -6,12 +6,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const pre_defined_networks = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "../../storage/pre_defined_networks.json"))
+  fs.readFileSync(
+    path.join(__dirname, "../../storage/pre_defined_networks.json")
+  )
 );
 
 class NetworkManager {
   constructor() {
-    this.network = pre_defined_networks.find((ntw) => ntw.name === "sepolia");
+    this.network = pre_defined_networks.find((ntw) => ntw.name === "testnet");
     this.networks = pre_defined_networks;
   }
 
