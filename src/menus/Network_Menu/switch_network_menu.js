@@ -12,7 +12,7 @@ const NETWORK_ICONS = {
 
 async function SwitchNetworkMenu() {
   console.clear();
-  Header();
+  await Header();
 
   // Get current network
   const currentNetwork = NetworkManager.getCurrentNetwork();

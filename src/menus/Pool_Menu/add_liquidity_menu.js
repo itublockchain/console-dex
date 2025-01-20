@@ -98,7 +98,9 @@ async function AddLiquidityMenu(pool_name) {
   let amount1 = 0;
 
   if (reserves && reserves[0] > 0 && reserves[1] > 0) {
+    // For existing pools, calculate based on current ratio
     amount1 = (amount0 * reserves[1]) / reserves[0];
+    
     console.log(chalk.yellow("\n📊 Required Amount:"));
     console.log(chalk.cyan(`${amount1.toFixed(6)} ${pool.token1.symbol}`));
 
@@ -113,10 +115,13 @@ async function AddLiquidityMenu(pool_name) {
       return false;
     }
   } else {
+    // For first liquidity provision, use 1:1 ratio since prices are equal
+    amount1 = amount0;
     console.log(chalk.yellow("\n📝 First Liquidity Provision:"));
     console.log(
       chalk.cyan(`You're setting the initial price ratio for this pool.`)
     );
+    console.log(chalk.cyan(`Required amount: ${amount1.toFixed(6)} ${pool.token1.symbol}`));
   }
 
   // Confirm transaction
@@ -163,11 +168,18 @@ async function AddLiquidityMenu(pool_name) {
       console.log(chalk.red("\n❌ Failed to add liquidity!"));
     }
   } catch (error) {
-    console.log(chalk.red("\n❌ Transaction failed:"), error.message);
+    if (debug_mode()) console.error(error);
+    return ErrorHandler.setError(error);
   }
 
-  console.log(chalk.gray("\nPress any key to continue..."));
-  await inquirer.prompt([{ type: "input", name: "continue", message: "" }]);
+  await inquirer.prompt([
+    {
+      type: "input",
+      name: "continue",
+      message: chalk.gray("Press any key to continue..."),
+    },
+  ]);
+
   return true;
 }
 

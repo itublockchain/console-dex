@@ -17,7 +17,7 @@ class WalletService {
     try {
       return await StorageManager.getWallets();
     } catch (error) {
-      console.error(error);
+      if (debug_mode()) console.error(error);
       return [];
     }
   }
@@ -150,7 +150,7 @@ class WalletService {
     try {
       return await StorageManager.getTokens();
     } catch (e) {
-      console.error("Error getting tokens:", e);
+      if (debug_mode()) console.error("Error getting tokens:", e);
       return [];
     }
   }

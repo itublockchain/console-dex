@@ -1,7 +1,6 @@
 import inquirer from "inquirer";
 import chalk from "chalk";
 import Header from "../Components/Header.js";
-import ReturnMenu from "../Components/return_menu.js";
 import AuthManager from "../../managers/AuthManager.js";
 import AddLiquidityMenu from "./add_liquidity_menu.js";
 import tokenService from "../../services/token_service.js";
@@ -18,7 +17,7 @@ const formatNumber = (num) => {
   return (num / 1000000000).toFixed(2) + "B";
 };
 
-export async function displayPoolInfo(pool, status = null) {
+export async function displayPoolInfo(pool) {
   if (!pool) {
     console.log(chalk.red("\nError: Pool information not available"));
     return;
@@ -116,23 +115,10 @@ export async function displayPoolInfo(pool, status = null) {
     );
   }
 
-  // Display status message if present
-  if (status) {
-    if (status === "error") {
-      console.log(
-        chalk.red(
-          "\n❌ Failed to add liquidity - Insufficient balance or transaction error"
-        )
-      );
-    } else if (status === "success") {
-      console.log(chalk.green("\n✅ Liquidity added successfully!"));
-    }
-  }
-
   console.log(chalk.gray("\n" + "─".repeat(50)));
 }
 
-async function PoolMenu(pool_name, cached_data = null, status = null) {
+async function PoolMenu(pool_name, cached_data = null) {
   // Always get fresh pool data
   const factory_contract = await PoolService.getFactoryContract();
   const pool = await PoolService.getPoolByName(pool_name);
@@ -141,7 +127,7 @@ async function PoolMenu(pool_name, cached_data = null, status = null) {
   console.clear();
   Header();
 
-  await displayPoolInfo(cached_data.pool, status);
+  await displayPoolInfo(cached_data.pool);
 
   const choices = [
     {
@@ -179,25 +165,12 @@ async function PoolMenu(pool_name, cached_data = null, status = null) {
       return PoolMenu(pool_name);
     case 1:
       try {
-        const success = await AddLiquidityMenu(pool_name);
-        let newStatus = null;
+        await AddLiquidityMenu(pool_name);
 
-        if (success === false) {
-          console.error("Failed to add liquidity");
-          newStatus = "error";
-        } else if (success === true) {
-          newStatus = "success";
-        } else {
-          // If success is undefined or null (user cancelled)
-          return PoolMenu(pool_name);
-        }
-
-        // Wait a bit to show the transaction result
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        return PoolMenu(pool_name, null, newStatus);
+        return PoolMenu(pool_name, null);
       } catch (err) {
         console.error("Error in add liquidity:", err);
-        return PoolMenu(pool_name, null, "error");
+        return PoolMenu(pool_name, null);
       }
     case 100:
       return;

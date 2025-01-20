@@ -6,6 +6,8 @@ import Pool from "../../viem/functions/pool.js";
 import * as viem from "viem";
 import { networks, privateKeyToAccount } from "../../viem/utils/utils.js";
 import NetworkManager from "../managers/NetworkManager.js";
+import { debug_mode } from "../config.js";
+import ErrorHandler from "../managers/ErrorHandler.js";
 
 async function getPools() {
   try {
@@ -17,13 +19,20 @@ async function getPools() {
     const pools = await ViemPool.getPools();
 
     if (!pools || pools.length === 0) {
-      console.log("No pools found");
+      if (debug_mode()) console.log("No pools found");
       return [];
     }
 
     return pools;
-  } catch (err) {
-    console.error("Error getting pools:", err);
+  } catch (error) {
+    if (debug_mode())
+      console.error("pool_service.js, error getting pools:", error.name);
+    if (error.message.startsWith("HTTP request failed.")) {
+      error.name = "HTTPRequestError";
+      ErrorHandler.setError(error);
+
+      return false;
+    }
     return [];
   }
 }
@@ -41,13 +50,13 @@ async function getPoolByName(pool_name) {
     );
 
     if (!pool) {
-      console.error(`Pool not found: ${pool_name}`);
+      if (debug_mode()) console.error(`Pool not found: ${pool_name}`);
       return null;
     }
 
     return pool;
   } catch (err) {
-    console.error("Error getting pool by name:", err);
+    if (debug_mode()) console.error("Error getting pool by name:", err);
     return null;
   }
 }
@@ -56,7 +65,7 @@ async function getFactoryContract() {
   try {
     return await ViemPool.getContract();
   } catch (err) {
-    console.error(err);
+    if (debug_mode()) console.error(err);
     return null;
   }
 }
@@ -66,7 +75,7 @@ async function updatePool(pool) {
     const pools = await getPools();
     return pools.find(({ address }) => address === pool.address);
   } catch (err) {
-    console.error(err);
+    if (debug_mode()) console.error(err);
     return null;
   }
 }
@@ -75,13 +84,13 @@ async function addLiquidity(pool_name, token_address, token_amount) {
   try {
     const pool = await getPoolByName(pool_name);
     if (!pool) {
-      console.error(`Pool not found: ${pool_name}`);
+      if (debug_mode()) console.error(`Pool not found: ${pool_name}`);
       return false;
     }
 
     const private_key = await AuthManager.getPrivateKey();
     if (!private_key) {
-      console.error("No private key available");
+      if (debug_mode()) console.error("No private key available");
       return false;
     }
 
@@ -94,7 +103,7 @@ async function addLiquidity(pool_name, token_address, token_amount) {
 
     return result !== false;
   } catch (err) {
-    console.error("Add liquidity error:", err);
+    if (debug_mode()) console.error("Add liquidity error:", err);
     return false;
   }
 }
@@ -133,22 +142,34 @@ async function swap(pool_name, token_in_address, amount_in) {
     }
 
     // Calculate amount with decimals
-    const amount_in_bigint = BigInt(amount_in) * BigInt(10 ** tokenProps.decimals);
+    const amount_in_bigint =
+      BigInt(amount_in) * BigInt(10 ** tokenProps.decimals);
 
     // Check token balance
-    const hasBalance = await token.hasEnoughBalance(account.address, amount_in_bigint, { account, walletClient });
+    const hasBalance = await token.hasEnoughBalance(
+      account.address,
+      amount_in_bigint,
+      { account, walletClient }
+    );
     if (!hasBalance) {
       throw new Error(`Insufficient ${tokenProps.symbol} balance`);
     }
 
     // Check current allowance
-    const currentAllowance = await token.allowance(account.address, routerAddress, { account, walletClient });
-    console.log("Current allowance:", currentAllowance.toString());
-    
+    const currentAllowance = await token.allowance(
+      account.address,
+      routerAddress,
+      { account, walletClient }
+    );
+    if (debug_mode())
+      console.log("Current allowance:", currentAllowance.toString());
+
     // If allowance is insufficient, approve
     if (currentAllowance < amount_in_bigint) {
-      console.log(`Approving ${amount_in} ${tokenProps.symbol} for transfer...`);
-      
+      console.log(
+        `Approving ${amount_in} ${tokenProps.symbol} for transfer...`
+      );
+
       // First reset allowance if needed
       if (currentAllowance > 0n) {
         const resetTx = await token.contract.write.approve(
@@ -156,9 +177,10 @@ async function swap(pool_name, token_in_address, amount_in) {
           { account, walletClient }
         );
         await token.waitForTransaction(resetTx);
-        console.log("Reset allowance to 0");
+        if (debug_mode()) console.log("Reset allowance to 0");
+        else console.log("Wait for a sec...");
       }
-      
+
       // Now set new allowance
       const approveTx = await token.contract.write.approve(
         [routerAddress, amount_in_bigint],
@@ -170,7 +192,7 @@ async function swap(pool_name, token_in_address, amount_in) {
         throw new Error("Approval transaction failed");
       }
       console.log("Token approval confirmed");
-    } else {
+    } else if (debug_mode()) {
       console.log("Sufficient allowance exists, skipping approval");
     }
 
@@ -184,11 +206,11 @@ async function swap(pool_name, token_in_address, amount_in) {
     );
 
     // Check if we got a transaction hash back
-    if (typeof txHash === 'string' && txHash.startsWith('0x')) {
+    if (typeof txHash === "string" && txHash.startsWith("0x")) {
       console.log(`Swap transaction hash: ${txHash}`);
       return true;
     }
-    
+
     // If we got false or null, transaction failed
     if (!txHash) {
       throw new Error("Swap transaction failed - no transaction hash returned");
@@ -196,9 +218,8 @@ async function swap(pool_name, token_in_address, amount_in) {
 
     // If we got something else unexpected
     throw new Error(`Unexpected swap result: ${txHash}`);
-
   } catch (err) {
-    console.error("Pool swap error:", err);
+    if (debug_mode()) console.error("Pool swap error:", err);
     throw err;
   }
 }
@@ -207,7 +228,7 @@ async function getTokenPrice(pool_address, token_address) {
   try {
     return await Router.getTokenPrice(pool_address, token_address);
   } catch (err) {
-    console.error("Error getting token price:", err);
+    if (debug_mode()) console.error("Error getting token price:", err);
     return null;
   }
 }
@@ -283,7 +304,7 @@ async function calculatePriceImpact(pool_address, tokenIn_address, amountIn) {
       };
     }
   } catch (error) {
-    console.error("Calculate price impact error:", error);
+    if (debug_mode()) console.error("Calculate price impact error:", error);
     return null;
   }
 }
@@ -294,7 +315,7 @@ async function getPoolReserves(pool_address) {
     const reserves = await pool.getReserves();
     return reserves;
   } catch (err) {
-    console.error("Error getting pool reserves:", err);
+    if (debug_mode()) console.error("Error getting pool reserves:", err);
     return null;
   }
 }
@@ -308,5 +329,5 @@ export default {
   swap,
   getTokenPrice,
   calculatePriceImpact,
-  getPoolReserves
+  getPoolReserves,
 };

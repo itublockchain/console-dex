@@ -8,7 +8,7 @@ import Pool from "../../../viem/functions/pool.js";
 
 async function MyPoolTokensMenu() {
   console.clear();
-  Header();
+  await Header();
 
   const userAddress = await AuthManager.getAddress();
   if (!userAddress) {
@@ -33,15 +33,17 @@ async function MyPoolTokensMenu() {
       await poolContract.getContract();
 
       // Get LP token balance
-      const lpBalance = await poolContract.contract.read.balanceOf([userAddress]);
-      
+      const lpBalance = await poolContract.contract.read.balanceOf([
+        userAddress,
+      ]);
+
       if (lpBalance && Number(lpBalance) > 0) {
         hasAnyLPTokens = true;
-        
+
         // Get total supply and reserves
         const totalSupply = await poolContract.contract.read.totalSupply();
         const reserves = await poolContract.contract.read.getReserves();
-        
+
         // Calculate share percentage
         const sharePercentage = (Number(lpBalance) / Number(totalSupply)) * 100;
 
@@ -61,11 +63,15 @@ async function MyPoolTokensMenu() {
         );
         console.log(
           chalk.blue(`💰 ${pool.token0.symbol}:`),
-          chalk.green(`${(token0Share / 10 ** pool.token0.decimals).toFixed(4)}`)
+          chalk.green(
+            `${(token0Share / 10 ** pool.token0.decimals).toFixed(4)}`
+          )
         );
         console.log(
           chalk.blue(`💰 ${pool.token1.symbol}:`),
-          chalk.green(`${(token1Share / 10 ** pool.token1.decimals).toFixed(4)}`)
+          chalk.green(
+            `${(token1Share / 10 ** pool.token1.decimals).toFixed(4)}`
+          )
         );
         console.log(chalk.gray("─".repeat(50)));
       }
@@ -88,10 +94,10 @@ async function MyPoolTokensMenu() {
       choices: [
         {
           name: chalk.red("Return Back"),
-          value: "back"
-        }
-      ]
-    }
+          value: "back",
+        },
+      ],
+    },
   ]);
 
   return;

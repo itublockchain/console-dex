@@ -3,6 +3,7 @@ import ERC20 from "./ERC20.js";
 import Pool from "./pool.js";
 import Router from "./router.js";
 import AuthManager from "../../src/managers/AuthManager.js";
+import { debug_mode } from "../../src/config.js";
 
 class Factory extends Contract {
   constructor() {
@@ -31,8 +32,8 @@ class Factory extends Contract {
       await this.getContract();
 
       const pair_length = Number(await this.contract.read.allPairsLength());
-      
-      const pairAddressPromises = Array.from({ length: pair_length }, (_, i) => 
+
+      const pairAddressPromises = Array.from({ length: pair_length }, (_, i) =>
         this.contract.read.allPairs([i])
       );
       const pairAddresses = await Promise.all(pairAddressPromises);
@@ -57,7 +58,7 @@ class Factory extends Contract {
           const [reserves, token0Address, token1Address] = await Promise.all([
             pool.contract.read.getReserves(),
             pool.contract.read.token0(),
-            pool.contract.read.token1()
+            pool.contract.read.token1(),
           ]);
 
           // Initialize token contracts
@@ -66,23 +67,29 @@ class Factory extends Contract {
 
           // Get token properties with better error handling
           const [token0Props, token1Props] = await Promise.all([
-            token0Contract.getProperties({ account, walletClient, test: true })
+            token0Contract
+              .getProperties({ account, walletClient, test: true })
               .catch(() => ({
                 name: "Unknown Token",
                 symbol: "???",
-                decimals: 18
+                decimals: 18,
               })),
-            token1Contract.getProperties({ account, walletClient, test: true })
+            token1Contract
+              .getProperties({ account, walletClient, test: true })
               .catch(() => ({
                 name: "Unknown Token",
                 symbol: "???",
-                decimals: 18
-              }))
+                decimals: 18,
+              })),
           ]);
 
           // Calculate reserves with proper decimals
-          const reserve0 = reserves[0] ? Number(reserves[0]) / (10 ** token0Props.decimals) : 0;
-          const reserve1 = reserves[1] ? Number(reserves[1]) / (10 ** token1Props.decimals) : 0;
+          const reserve0 = reserves[0]
+            ? Number(reserves[0]) / 10 ** token0Props.decimals
+            : 0;
+          const reserve1 = reserves[1]
+            ? Number(reserves[1]) / 10 ** token1Props.decimals
+            : 0;
 
           // Calculate k (constant product)
           const k = reserve0 * reserve1;
@@ -96,14 +103,14 @@ class Factory extends Contract {
               address: token0Address,
               ...token0Props,
               reserve: Number(reserves[0].toString()),
-              formattedReserve: reserve0
+              formattedReserve: reserve0,
             },
             token1: {
               address: token1Address,
               ...token1Props,
               reserve: Number(reserves[1].toString()),
-              formattedReserve: reserve1
-            }
+              formattedReserve: reserve1,
+            },
           };
         } catch (error) {
           return null;
@@ -111,8 +118,10 @@ class Factory extends Contract {
       });
 
       const pairs = await Promise.all(pairPromises);
-      return pairs.filter(pair => pair !== null);
+      return pairs.filter((pair) => pair !== null);
     } catch (error) {
+      if (debug_mode()) console.error("Factory.js getPools: ", error.name);
+      if (error.message.startsWith("HTTP request failed.")) throw error;
       return [];
     }
   }
@@ -131,12 +140,17 @@ class Factory extends Contract {
         private_key
       );
 
-      if (!result) {
-        return false;
-      }
+      const transaction = await this.publicClient.getTransactionReceipt({
+        hash: result,
+      });
 
-      return result;
+      if (transaction.status === "success") return result;
+      else if (debug_mode()) console.log("Transaction failed");
+
+      return false;
     } catch (error) {
+      if (debug_mode())
+        console.error("Factory.js, Error adding liquidity:", error);
       return false;
     }
   }

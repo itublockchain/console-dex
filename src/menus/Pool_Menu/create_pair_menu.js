@@ -6,6 +6,9 @@ import Router from "../../../viem/functions/router.js";
 import ERC20 from "../../../viem/functions/ERC20.js";
 import PoolsMenu from "./pools_menu.js";
 import PoolService from "../../services/pool_service.js";
+import { debug_mode } from "../../config.js";
+import Header from "../Components/Header.js";
+import ErrorHandler from "../../managers/ErrorHandler.js";
 
 async function CreatePairMenu() {
   // Check if wallet is connected
@@ -13,6 +16,10 @@ async function CreatePairMenu() {
     console.log(chalk.red("Please connect your wallet first!"));
     return;
   }
+
+  console.clear();
+
+  Header();
 
   console.log(
     chalk.blue(
@@ -72,20 +79,20 @@ async function CreatePairMenu() {
     const tokenBContract = new ERC20(tokenB);
 
     // Initialize contracts with wallet client
-    const { client: walletClient, account } = await Router.createWalletClient(private_key);
+    const { client: walletClient, account } = await Router.createWalletClient(
+      private_key
+    );
     await tokenAContract.getContract({ walletClient, account });
     await tokenBContract.getContract({ walletClient, account });
 
     // Get token properties
     const [tokenAProps, tokenBProps] = await Promise.all([
       tokenAContract.getProperties({ account, walletClient }),
-      tokenBContract.getProperties({ account, walletClient })
+      tokenBContract.getProperties({ account, walletClient }),
     ]);
 
     const tokenASymbol = tokenAProps.symbol;
     const tokenBSymbol = tokenBProps.symbol;
-    const tokenADecimals = tokenAProps.decimals;
-    const tokenBDecimals = tokenBProps.decimals;
 
     console.log(chalk.blue(`Token A: ${tokenASymbol} (${tokenA})`));
     console.log(chalk.blue(`Token B: ${tokenBSymbol} (${tokenB})`));
@@ -137,26 +144,8 @@ async function CreatePairMenu() {
 
     // Add initial liquidity
     console.log(chalk.blue("Adding initial liquidity..."));
-    
-    // Convert amounts to BigInt with proper decimals
-    const amountABigInt = BigInt(Math.floor(Number(amountA) * 10 ** tokenADecimals));
-    const amountBBigInt = BigInt(Math.floor(Number(amountB) * 10 ** tokenBDecimals));
 
-    // Approve tokens first
-    console.log(chalk.blue("Approving tokens..."));
-    console.log(chalk.blue(`Approving ${amountA} ${tokenASymbol}...`));
-    await tokenAContract.write.approve(
-      [Router.address, amountABigInt],
-      { account: { address: AuthManager.current_wallet, privateKey: private_key } }
-    );
-
-    console.log(chalk.blue(`Approving ${amountB} ${tokenBSymbol}...`));
-    await tokenBContract.write.approve(
-      [Router.address, amountBBigInt],
-      { account: { address: AuthManager.current_wallet, privateKey: private_key } }
-    );
-
-    // Now add liquidity
+    //  Add liquidity
     await Router.addLiquidity(
       createPairResult.pairAddress,
       tokenA,
@@ -176,14 +165,18 @@ async function CreatePairMenu() {
 
     // Wait a bit for blockchain to update and refresh pools list
     console.log(chalk.blue("Refreshing pools list..."));
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     await PoolService.getPools(); // Force refresh pools list
 
     return PoolsMenu();
   } catch (error) {
-    console.error(chalk.red("Error creating pair:"), error.message);
-    await new Promise((resolve) => setTimeout(resolve, 60000));
-    return;
+    if (debug_mode()) {
+      console.error(chalk.red("Error creating pair:"), error.message);
+      await new Promise(() => setTimeout(() => {}, 5000));
+    }
+
+    ErrorHandler.setError(error);
+    return await PoolsMenu();
   }
 }
 

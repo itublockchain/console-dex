@@ -25,11 +25,12 @@ async function PoolsMenu() {
   }
 
   const pools = await PoolService.getPools();
-  if (!pools || pools.length === 0) {
+  if (pools == false) return;
+
+  if (!pools || pools.length === 0)
     console.log(
       chalk.yellow("No pools found yet. Create a new pair to get started!")
     );
-  }
 
   // Create pool choices with icons
   const poolChoices = (pools || []).map(({ name, address }) => ({
@@ -67,7 +68,7 @@ async function PoolsMenu() {
 
   // Add return option at the bottom
   choices.push(new inquirer.Separator(""), {
-    name: `${MENU_ICONS.BACK} Return Back`,
+    name: chalk.red(`${MENU_ICONS.BACK} Return Back`),
     value: "Return Back",
   });
 

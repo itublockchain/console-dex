@@ -6,6 +6,7 @@ import Contract from "./Contract_Base.js";
 import ERC20 from "./ERC20.js";
 
 import NetworkManager from "../../src/managers/NetworkManager.js";
+import { debug_mode } from "../../src/config.js";
 
 class Router extends Contract {
   constructor() {
@@ -99,7 +100,7 @@ class Router extends Contract {
       const requiredBalance = minGas * gasPrice;
 
       if (balance < requiredBalance) {
-        console.error("Insufficient ETH for gas");
+        if (debug_mode) console.error("Insufficient ETH for gas");
         return false;
       }
 
@@ -114,7 +115,7 @@ class Router extends Contract {
       );
 
       if (!hasEnoughBalance) {
-        console.error("Insufficient token balance");
+        if (debug_mode()) console.error("Insufficient token balance");
         return false;
       }
 
@@ -130,7 +131,7 @@ class Router extends Contract {
       );
 
       if (!approveTx) {
-        console.error("Approval failed");
+        if (debug_mode()) console.error("Approval failed");
         return false;
       }
 
@@ -174,7 +175,8 @@ class Router extends Contract {
 
         return receipt.transactionHash;
       } catch (swapError) {
-        console.error("First swap attempt failed:", swapError);
+        if (debug_mode())
+          console.error("First swap attempt failed:", swapError);
 
         // If first attempt fails, try with zero minAmountOut
         console.log("Retrying with zero minAmountOut...");
@@ -200,7 +202,7 @@ class Router extends Contract {
         return receipt2.transactionHash;
       }
     } catch (error) {
-      console.error("Swap error:", error);
+      if (debug_mode()) console.error("Swap error:", error);
       return false;
     }
   }
@@ -266,7 +268,7 @@ class Router extends Contract {
         };
       }
     } catch (error) {
-      console.error("Error getting token price:", error);
+      if (debug_mode()) console.error("Error getting token price:", error);
       return null;
     }
   }
@@ -275,7 +277,7 @@ class Router extends Contract {
     try {
       // Validate parameters
       if (!pool_address || !token_address || !token_amount || !private_key) {
-        console.error("Missing parameters for addLiquidity");
+        if (debug_mode()) console.error("Missing parameters for addLiquidity");
         return false;
       }
 
@@ -309,20 +311,35 @@ class Router extends Contract {
 
       // Get decimals
       const tokenDecimals = await tokenContract.contract.read.decimals();
-      const otherTokenDecimals = await otherTokenContract.contract.read.decimals();
+      const otherTokenDecimals =
+        await otherTokenContract.contract.read.decimals();
 
       // Parse token amount to float if it's a string
-      const tokenAmountFloat = typeof token_amount === 'string' ? parseFloat(token_amount) : token_amount;
-      
+      const tokenAmountFloat =
+        typeof token_amount === "string"
+          ? parseFloat(token_amount)
+          : token_amount;
+
       // Convert input amount to BigInt with proper decimals
-      const amountIn = BigInt(Math.floor(tokenAmountFloat * (10 ** Number(tokenDecimals))));
-      console.log('Amount In:', tokenAmountFloat, 'Decimals:', tokenDecimals, 'BigInt:', amountIn.toString());
+      const amountIn = BigInt(
+        Math.floor(tokenAmountFloat * 10 ** Number(tokenDecimals))
+      );
+      if (debug_mode())
+        console.log(
+          "Amount In:",
+          tokenAmountFloat,
+          "Decimals:",
+          tokenDecimals,
+          "BigInt:",
+          amountIn.toString()
+        );
 
       // Get current reserves
       const reserves = await pair_contract.read.getReserves();
       const reserve0 = reserves[0];
       const reserve1 = reserves[1];
-      console.log('Reserves:', reserve0.toString(), reserve1.toString());
+      if (debug_mode())
+        console.log("Reserves:", reserve0.toString(), reserve1.toString());
 
       // Calculate other token amount based on reserves
       let otherTokenAmount;
@@ -331,24 +348,44 @@ class Router extends Contract {
       if (reserve0 === 0n && reserve1 === 0n) {
         // For first liquidity, we'll use the same nominal amount
         const otherTokenAmountFloat = tokenAmountFloat; // Use same amount for initial liquidity
-        otherTokenAmount = BigInt(Math.floor(otherTokenAmountFloat * (10 ** Number(otherTokenDecimals))));
-        console.log('First liquidity - Other token amount:', otherTokenAmount.toString());
+        otherTokenAmount = BigInt(
+          Math.floor(otherTokenAmountFloat * 10 ** Number(otherTokenDecimals))
+        );
+        console.log(
+          "First liquidity - Other token amount:",
+          otherTokenAmount.toString()
+        );
       } else {
         // For subsequent liquidity adds, calculate based on current ratio
-        const normalizedReserve0 = Number(reserve0) / (10 ** Number(tokenDecimals));
-        const normalizedReserve1 = Number(reserve1) / (10 ** Number(otherTokenDecimals));
-        console.log('Normalized reserves:', normalizedReserve0, normalizedReserve1);
+        const normalizedReserve0 =
+          Number(reserve0) / 10 ** Number(tokenDecimals);
+        const normalizedReserve1 =
+          Number(reserve1) / 10 ** Number(otherTokenDecimals);
+        if (debug_mode())
+          console.log(
+            "Normalized reserves:",
+            normalizedReserve0,
+            normalizedReserve1
+          );
 
-        const otherTokenOptimal = tokenAmountFloat * (normalizedReserve1 / normalizedReserve0);
-        console.log('Optimal other token amount:', otherTokenOptimal);
+        const otherTokenOptimal =
+          tokenAmountFloat * (normalizedReserve1 / normalizedReserve0);
+        if (debug_mode())
+          console.log("Optimal other token amount:", otherTokenOptimal);
 
-        otherTokenAmount = BigInt(Math.floor(otherTokenOptimal * (10 ** Number(otherTokenDecimals))));
-        console.log('Other token amount BigInt:', otherTokenAmount.toString());
+        otherTokenAmount = BigInt(
+          Math.floor(otherTokenOptimal * 10 ** Number(otherTokenDecimals))
+        );
+        if (debug_mode())
+          console.log(
+            "Other token amount BigInt:",
+            otherTokenAmount.toString()
+          );
       }
 
       // Ensure amounts are not zero
       if (amountIn === 0n || otherTokenAmount === 0n) {
-        console.error('Zero amounts calculated');
+        if (debug_mode()) console.error("Zero amounts calculated");
         return false;
       }
 
@@ -366,7 +403,7 @@ class Router extends Contract {
       );
 
       if (!hasEnoughToken0 || !hasEnoughToken1) {
-        console.error('Insufficient balance');
+        if (debug_mode()) console.error("Insufficient balance");
         return false;
       }
 
@@ -381,12 +418,12 @@ class Router extends Contract {
       const requiredBalance = minGas * gasPrice;
 
       if (balance < requiredBalance) {
-        console.error('Insufficient ETH for gas');
+        if (debug_mode()) console.error("Insufficient ETH for gas");
         return false;
       }
 
       // Approve both tokens
-      console.log('Approving tokens...');
+      console.log("Approving tokens...");
       const approvalTx1 = await tokenContract.approve(this.address, amountIn, {
         account,
         walletClient,
@@ -403,17 +440,18 @@ class Router extends Contract {
 
       // Return if either approval fails
       if (!approvalTx1 || !approvalTx2) {
-        console.error('Token approval failed');
+        if (debug_mode()) console.error("Token approval failed");
         return false;
       }
 
-      console.log('Tokens approved, adding liquidity...');
+      console.log("Tokens approved, adding liquidity...");
 
       // Execute addLiquidity transaction
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
 
       // For initial liquidity, use very small slippage to ensure it goes through
-      const slippageNumerator = reserve0 === 0n && reserve1 === 0n ? 999n : 995n;
+      const slippageNumerator =
+        reserve0 === 0n && reserve1 === 0n ? 999n : 995n;
       const minAmountIn = (amountIn * slippageNumerator) / 1000n;
       const minOtherAmount = (otherTokenAmount * slippageNumerator) / 1000n;
 
@@ -429,39 +467,38 @@ class Router extends Contract {
         deadline,
       ];
 
-      console.log('Adding liquidity with args:', {
-        token0,
-        token1,
-        amount0: args[2].toString(),
-        amount1: args[3].toString(),
-        min0: args[4].toString(),
-        min1: args[5].toString(),
-        to: args[6],
-        deadline: args[7].toString()
+      if (debug_mode())
+        console.log("Adding liquidity with args:", {
+          token0,
+          token1,
+          amount0: args[2].toString(),
+          amount1: args[3].toString(),
+          min0: args[4].toString(),
+          min1: args[5].toString(),
+          to: args[6],
+          deadline: args[7].toString(),
+        });
+
+      const tx = await this.contract.write.addLiquidity(args, {
+        account,
+        gas: minGas,
       });
 
-      const tx = await this.contract.write.addLiquidity(
-        args,
-        {
-          account,
-          gas: minGas,
-        }
-      );
-
-      console.log('Transaction sent:', tx);
+      console.log("Transaction sent:", tx);
       const receipt = await this.waitForTransaction(tx);
-      
+
       // Format receipt for better logging
       if (receipt) {
-        console.log('Transaction successful!');
-        console.log('Gas used:', receipt.cumulativeGasUsed.toString());
+        console.log("Transaction successful!");
+        if (debug_mode)
+          console.log("Gas used:", receipt.cumulativeGasUsed.toString());
         return receipt.transactionHash;
       } else {
-        console.error('Transaction failed - no receipt');
+        if (debug_mode()) console.error("Transaction failed - no receipt");
         return false;
       }
     } catch (error) {
-      console.error("Add liquidity error:", error);
+      if (debug_mode()) console.error("Add liquidity error:", error);
       return false;
     }
   }
@@ -490,7 +527,7 @@ class Router extends Contract {
       const factory = await ViemPool.getContract({ walletClient, account });
 
       // Create pair
-      console.log("Creating pair...");
+      if(debug_mode())console.log("Router: Creating pair...");
       const tx = await factory.write.createPair([tokenA, tokenB], { account });
 
       const receipt = await this.publicClient.waitForTransactionReceipt({
@@ -509,7 +546,7 @@ class Router extends Contract {
         pairAddress,
       };
     } catch (error) {
-      console.error("Create pair error:", error);
+      if (debug_mode()) console.error("Create pair error:", error);
       throw error;
     }
   }

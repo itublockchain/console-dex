@@ -78,5 +78,5 @@ module.exports = {
   swapTokensForExactTokens,
   approveToken,
   getAmountsOut: getAmountsOutWithRouter,
-  getAmountsIn: getAmountsInWithRouter
+  getAmountsIn: getAmountsInWithRouter,
 };

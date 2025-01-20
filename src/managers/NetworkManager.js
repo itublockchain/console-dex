@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { test_mode } from "../config.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,7 +14,8 @@ const pre_defined_networks = JSON.parse(
 
 class NetworkManager {
   constructor() {
-    this.network = pre_defined_networks.find((ntw) => ntw.name === "testnet");
+    const start_name = test_mode() ? "testnet" : "sepolia";
+    this.network = pre_defined_networks.find((ntw) => ntw.name === start_name);
     this.networks = pre_defined_networks;
   }
 

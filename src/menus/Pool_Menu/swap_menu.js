@@ -3,6 +3,8 @@ import chalk from "chalk";
 import poolService from "../../services/pool_service.js";
 import tokenService from "../../services/token_service.js";
 import AuthManager from "../../managers/AuthManager.js";
+import ErrorHandler from "../../managers/ErrorHandler.js";
+import { debug_mode } from "../../config.js";
 
 async function SwapMenu(pool_name) {
   console.clear();
@@ -65,15 +67,15 @@ async function SwapMenu(pool_name) {
       message: chalk.green("Select token to swap:"),
       choices: [
         {
-          name: `${pool.token0.symbol}→${pool.token1.symbol}`,
+          name: `${pool.token0.symbol} → ${pool.token1.symbol}`,
           value: 0,
         },
         {
-          name: `${pool.token1.symbol}→${pool.token0.symbol}`,
+          name: `${pool.token1.symbol} → ${pool.token0.symbol}`,
           value: 1,
         },
         {
-          name: "Return Back",
+          name: chalk.red("Return Back"),
           value: 2,
         },
       ],
@@ -191,6 +193,7 @@ async function SwapMenu(pool_name) {
     );
 
     if (success) {
+      console.clear();
       console.log(chalk.green("\n✅ Swap successful!"));
 
       // Show updated prices
@@ -230,11 +233,18 @@ async function SwapMenu(pool_name) {
       console.log(chalk.red("\n❌ Swap failed!"));
     }
   } catch (error) {
-    console.log(chalk.red("\n❌ Error during swap:"), error.message);
+    if (debug_mode()) console.error(error);
+    return ErrorHandler.setError(error);
   }
 
-  console.log(chalk.gray("\nPress any key to continue..."));
-  await inquirer.prompt([{ type: "input", name: "continue", message: "" }]);
+  await inquirer.prompt([
+    {
+      type: "input",
+      name: "continue",
+      message: chalk.gray("Press any key to continue..."),
+    },
+  ]);
+
   return false;
 }
 

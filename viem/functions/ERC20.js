@@ -32,7 +32,7 @@ class ERC20 extends Contract {
         address: this.address,
       };
     } catch (error) {
-      if (!test) console.error("Error getting token properties:", error);
+      if (debug_mode()) console.error("Error getting token properties:", error);
       return {
         name: "Unknown Token",
         symbol: "???",
@@ -83,8 +83,11 @@ class ERC20 extends Contract {
   async approve(spender, amount, { account, walletClient, gas } = {}) {
     try {
       // Check current allowance first
-      const currentAllowance = await this.allowance(account.address, spender, { account, walletClient });
-      
+      const currentAllowance = await this.allowance(account.address, spender, {
+        account,
+        walletClient,
+      });
+
       // If current allowance is greater than or equal to amount, no need to approve
       if (currentAllowance >= amount) {
         return true;
@@ -94,7 +97,7 @@ class ERC20 extends Contract {
       if (currentAllowance > 0n) {
         const resetTx = await this.contract.write.approve([spender, 0n], {
           account,
-          gas
+          gas,
         });
         await this.waitForTransaction(resetTx);
       }
@@ -102,7 +105,7 @@ class ERC20 extends Contract {
       // Approve new amount
       const tx = await this.contract.write.approve([spender, amount], {
         account,
-        gas
+        gas,
       });
 
       const receipt = await this.waitForTransaction(tx);

@@ -6,6 +6,10 @@ import wrap_async from "./src/utils/wrap_async.js";
 import StorageManager from "./src/managers/StorageManager.js";
 import chalk from "chalk"; // Import chalk for colored console output
 
+import dotenv from "dotenv";
+import { debug_mode } from "./src/config.js";
+dotenv.config();
+
 // Sadece uygulama açıkken tutulacak bir veri.
 /*
   { address: "0xBsdBd...", wallet_key: "cokozelsifrem" }
@@ -35,7 +39,7 @@ program
         console.error("An error occurred:", err);
       }
     } catch (error) {
-      console.error("Fatal error:", error);
+      if (debug_mode()) console.error("Fatal error:", error);
     }
   });
 
@@ -48,9 +52,6 @@ process.on("SIGINT", () => {
 function exitApp() {
   let console_dex = chalk.blue(`Console-Dex`);
   console.clear();
-  console.log(
-    `\n${console_dex}'ten çıktınız.`,
-    chalk.yellow("Görüşürüz! 👋 \n")
-  );
+  console.log(`\nExited from ${console_dex}.`, chalk.yellow("Bye Bye! 👋 \n"));
   process.exit(); // Uygulamayı düzgün kapat
 }
