@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import chalk from "chalk";
+import { debug_mode } from "../config.js";
 
 class StorageManager {
   constructor() {
@@ -37,7 +38,8 @@ class StorageManager {
       this.initializeFile(this.walletsPath, []);
       this.initializeFile(this.tokensPath, []);
     } catch (error) {
-      console.error(chalk.red("Error initializing storage:"), error);
+      if (debug_mode())
+        console.error(chalk.red("Error initializing storage:"), error);
     }
   }
 
@@ -47,7 +49,8 @@ class StorageManager {
         fs.writeFileSync(filePath, JSON.stringify(defaultContent, null, 2));
       }
     } catch (error) {
-      console.error(chalk.red(`Error initializing file ${filePath}:`), error);
+      if (debug_mode())
+        console.error(chalk.red(`Error initializing file ${filePath}:`), error);
     }
   }
 
@@ -56,7 +59,8 @@ class StorageManager {
     try {
       fs.writeFileSync(this.walletsPath, JSON.stringify(wallets, null, 2));
     } catch (error) {
-      console.error(chalk.red("Error saving wallets:"), error);
+      if (debug_mode())
+        console.error(chalk.red("Error saving wallets:"), error);
       throw error;
     }
   }
@@ -69,7 +73,8 @@ class StorageManager {
       const data = fs.readFileSync(this.walletsPath, "utf8");
       return JSON.parse(data);
     } catch (error) {
-      console.error(chalk.red("Error reading wallets:"), error);
+      if (debug_mode())
+        console.error(chalk.red("Error reading wallets:"), error);
       return [];
     }
   }
@@ -79,7 +84,7 @@ class StorageManager {
     try {
       fs.writeFileSync(this.tokensPath, JSON.stringify(tokens, null, 2));
     } catch (error) {
-      console.error(chalk.red("Error saving tokens:"), error);
+      if (debug_mode()) console.error(chalk.red("Error saving tokens:"), error);
       throw error;
     }
   }
@@ -92,7 +97,7 @@ class StorageManager {
       const data = fs.readFileSync(this.tokensPath, "utf8");
       return JSON.parse(data);
     } catch (error) {
-      console.error(chalk.red("Error reading tokens:"), error);
+      if (debug_mode) console.error(chalk.red("Error reading tokens:"), error);
       return [];
     }
   }
@@ -118,7 +123,8 @@ class StorageManager {
         chalk.green("✅ Successfully migrated storage to config directory")
       );
     } catch (error) {
-      console.error(chalk.red("Error migrating old storage:"), error);
+      if (debug_mode())
+        console.error(chalk.red("Error migrating old storage:"), error);
     }
   }
 }

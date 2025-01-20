@@ -2,7 +2,7 @@
 import WalletService from "../services/wallet_service.js";
 import { privateKeyToPublicKey } from "../../viem/utils/utils.js";
 import wrap from "../utils/wrap_async.js";
-import StorageManager from './StorageManager.js';
+import StorageManager from "./StorageManager.js";
 
 import chalk from "chalk";
 

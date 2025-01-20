@@ -2,6 +2,8 @@ import Contract from "./Contract_Base.js";
 import ERC20 from "./ERC20.js";
 import Pool from "./pool.js";
 import Router from "./router.js";
+import AuthManager from "../../src/managers/AuthManager.js";
+import { debug_mode } from "../../src/config.js";
 
 class Factory extends Contract {
   constructor() {
@@ -14,108 +16,152 @@ class Factory extends Contract {
   }
 
   async getPoolContract(pair_address) {
-    const contract = new Pool(pair_address);
-    this.getContract();
-
-    await contract.initializeFactory();
-    return contract.getContract();
+    try {
+      const pool = new Pool(pair_address);
+      await pool.getContract();
+      await pool.initializeFactory();
+      return pool;
+    } catch (error) {
+      return null;
+    }
   }
 
   async getPools() {
     try {
       this.setAddress();
-      this.getContract();
+      await this.getContract();
 
-      const pair_length = Number(await this.contract.read.allPairsLength()); // BigInt'i number'a çevir
-      
-      // Önce tüm pair adreslerini paralel olarak al
-      const pairAddressPromises = Array.from({ length: pair_length }, (_, i) => 
+      const pair_length = Number(await this.contract.read.allPairsLength());
+
+      const pairAddressPromises = Array.from({ length: pair_length }, (_, i) =>
         this.contract.read.allPairs([i])
       );
       const pairAddresses = await Promise.all(pairAddressPromises);
 
-      // Her pair için gerekli bilgileri paralel olarak al
+      let walletClient, account;
+      if (AuthManager.isLoggedIn()) {
+        const private_key = await AuthManager.getPrivateKey();
+        const result = await Router.createWalletClient(private_key);
+        walletClient = result.client;
+        account = result.account;
+      }
+
       const pairPromises = pairAddresses.map(async (pair_address) => {
         try {
-          const pair = await this.getPoolContract(pair_address);
-          const [
-            reserves,
-            token0Address,
-            token1Address
-          ] = await Promise.all([
-            pair.read.getReserves(),
-            pair.read.token0(),
-            pair.read.token1()
+          // Initialize pool contract
+          const pool = await this.getPoolContract(pair_address);
+          if (!pool) {
+            return null;
+          }
+
+          // Get pool data
+          const [reserves, token0Address, token1Address] = await Promise.all([
+            pool.contract.read.getReserves(),
+            pool.contract.read.token0(),
+            pool.contract.read.token1(),
           ]);
 
-          const [token0, token1] = await Promise.all([
-            new ERC20(token0Address).getProperties(),
-            new ERC20(token1Address).getProperties()
+          // Initialize token contracts
+          const token0Contract = new ERC20(token0Address);
+          const token1Contract = new ERC20(token1Address);
+
+          // Get token properties with better error handling
+          const [token0Props, token1Props] = await Promise.all([
+            token0Contract
+              .getProperties({ account, walletClient, test: true })
+              .catch(() => ({
+                name: "Unknown Token",
+                symbol: "???",
+                decimals: 18,
+              })),
+            token1Contract
+              .getProperties({ account, walletClient, test: true })
+              .catch(() => ({
+                name: "Unknown Token",
+                symbol: "???",
+                decimals: 18,
+              })),
           ]);
 
-          // BigInt'leri güvenli bir şekilde number'a çevir
-          const reserve0 = reserves[0] ? Number(reserves[0].toString()) : 0;
-          const reserve1 = reserves[1] ? Number(reserves[1].toString()) : 0;
+          // Calculate reserves with proper decimals
+          const reserve0 = reserves[0]
+            ? Number(reserves[0]) / 10 ** token0Props.decimals
+            : 0;
+          const reserve1 = reserves[1]
+            ? Number(reserves[1]) / 10 ** token1Props.decimals
+            : 0;
 
+          // Calculate k (constant product)
+          const k = reserve0 * reserve1;
+
+          // Return pool data
           return {
-            name: `${token0.symbol} / ${token1.symbol}`,
-            k: reserve0 * reserve1,
+            name: `${token0Props.symbol} / ${token1Props.symbol}`,
+            k,
             address: pair_address,
             token0: {
               address: token0Address,
-              ...token0,
-              reserve: reserve0
+              ...token0Props,
+              reserve: Number(reserves[0].toString()),
+              formattedReserve: reserve0,
             },
             token1: {
               address: token1Address,
-              ...token1,
-              reserve: reserve1
-            }
+              ...token1Props,
+              reserve: Number(reserves[1].toString()),
+              formattedReserve: reserve1,
+            },
           };
-        } catch (err) {
-          console.error("Error processing pool:", pair_address, err);
+        } catch (error) {
           return null;
         }
       });
 
-      const pools = await Promise.all(pairPromises);
-      // Hata alan pool'ları filtrele
-      return pools.filter(pool => pool !== null);
-      
-    } catch (err) {
-      console.error("Error in getPools:", err);
-      return false;
+      const pairs = await Promise.all(pairPromises);
+      return pairs.filter((pair) => pair !== null);
+    } catch (error) {
+      if (debug_mode()) console.error("Factory.js getPools: ", error.name);
+      if (error.message.startsWith("HTTP request failed.")) throw error;
+      return [];
     }
   }
 
   async addLiquidity(pool_address, token_address, token_amount, private_key) {
     try {
+      if (!pool_address || !token_address || !token_amount || !private_key) {
+        return false;
+      }
+
       this.getContract();
-      return await Router.addLiquidity(
+      const result = await Router.addLiquidity(
         pool_address,
         token_address,
         token_amount,
         private_key
       );
+
+      const transaction = await this.publicClient.getTransactionReceipt({
+        hash: result,
+      });
+
+      if (transaction.status === "success") return result;
+      else if (debug_mode()) console.log("Transaction failed");
+
+      return false;
     } catch (error) {
-      console.error("Pool addLiquidity error:", error);
-      throw error;
+      if (debug_mode())
+        console.error("Factory.js, Error adding liquidity:", error);
+      return false;
     }
   }
 
   async swap(pool_address, token_in_address, amount_in, private_key) {
     try {
       this.getContract();
-      // Validate parameters
       if (!pool_address || !token_in_address || !amount_in || !private_key) {
-        throw new Error("Invalid parameters for swap.");
+        return false;
       }
 
-      console.log(
-        `Swapping ${amount_in} of token at address ${token_in_address} in pool at ${pool_address}`
-      );
-
-      // Call the Router's swap method
       const result = await Router.swap(
         pool_address,
         token_in_address,
@@ -123,11 +169,9 @@ class Factory extends Contract {
         private_key
       );
 
-      console.log(`Swap successful: ${result.transactionHash}`);
       return result;
     } catch (error) {
-      console.error("Pool swap error:", error);
-      throw error;
+      return false;
     }
   }
 }
@@ -135,4 +179,4 @@ class Factory extends Contract {
 const ViemPool = new Factory();
 export { ViemPool };
 
-export default new Factory();
+export default Factory;

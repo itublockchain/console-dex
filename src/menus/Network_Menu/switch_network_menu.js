@@ -12,7 +12,7 @@ const NETWORK_ICONS = {
 
 async function SwitchNetworkMenu() {
   console.clear();
-  Header();
+  await Header();
 
   // Get current network
   const currentNetwork = NetworkManager.getCurrentNetwork();
@@ -102,16 +102,7 @@ async function SwitchNetworkMenu() {
       return;
 
     default:
-      // Switch to selected network
-      if (choice === currentNetwork) {
-        console.log(chalk.yellow("\nℹ Already connected to this network"));
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        return await SwitchNetworkMenu();
-      }
-
-      NetworkManager.switchNetwork(choice);
-      console.log(chalk.green(`\n✓ Successfully switched to ${choice}`));
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await NetworkMenu(choice);
       return;
   }
 }

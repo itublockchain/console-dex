@@ -3,7 +3,12 @@
 import { Command } from "commander";
 import MainMenu from "./src/menus/main_menu.js";
 import wrap_async from "./src/utils/wrap_async.js";
-import StorageManager from './src/managers/StorageManager.js';
+import StorageManager from "./src/managers/StorageManager.js";
+import chalk from "chalk"; // Import chalk for colored console output
+
+import dotenv from "dotenv";
+import { debug_mode } from "./src/config.js";
+dotenv.config();
 
 // Sadece uygulama açıkken tutulacak bir veri.
 /*
@@ -15,7 +20,7 @@ export const wallet_passwords = [];
 const program = new Command();
 
 // Migrate old storage to new location
-StorageManager.migrateFromOldStorage('./storage');
+StorageManager.migrateFromOldStorage("./storage");
 
 program
   .name("console-dex")
@@ -29,11 +34,24 @@ program
     try {
       const [data, err] = await wrap_async(MainMenu());
       if (err) {
+        if (err.name === "ExitPromptError") exitApp();
+
         console.error("An error occurred:", err);
       }
     } catch (error) {
-      console.error("Fatal error:", error);
+      if (debug_mode()) console.error("Fatal error:", error);
     }
   });
 
 program.parse(process.argv);
+
+process.on("SIGINT", () => {
+  exitApp();
+});
+
+function exitApp() {
+  let console_dex = chalk.blue(`Console-Dex`);
+  console.clear();
+  console.log(`\nExited from ${console_dex}.`, chalk.yellow("Bye Bye! 👋 \n"));
+  process.exit(); // Uygulamayı düzgün kapat
+}

@@ -4,9 +4,12 @@ async function getTokenBalance(tokenAddress, userAddress) {
   try {
     const token = new ERC20(tokenAddress);
     await token.getContract();
-    return await token.getBalance(userAddress);
+
+    const balance = await token.getBalance(userAddress);
+
+    return balance;
   } catch (error) {
-    console.error("Error getting token balance:", error);
+    if (debug_mode()) console.error("Error getting token balance:", error);
     return 0;
   }
 }

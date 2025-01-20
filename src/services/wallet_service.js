@@ -6,7 +6,7 @@ import chalk from "chalk";
 import { wallet_passwords } from "../../index.js";
 import getERC20Properties from "../../viem/functions/getERC20Properties.js";
 import AuthManager from "../managers/AuthManager.js";
-import StorageManager from '../managers/StorageManager.js';
+import StorageManager from "../managers/StorageManager.js";
 
 const wallet_file_address = import.meta
   .resolve("../../storage/wallets.json")
@@ -17,7 +17,7 @@ class WalletService {
     try {
       return await StorageManager.getWallets();
     } catch (error) {
-      console.error(error);
+      if (debug_mode()) console.error(error);
       return [];
     }
   }
@@ -123,7 +123,7 @@ class WalletService {
         };
       }
 
-      const token = await getERC20Properties(token_address);
+      const token = await getERC20Properties(token_address, { test: true });
       const token_properties = token.__token_properties;
       if (!token_properties) {
         return {
@@ -150,7 +150,7 @@ class WalletService {
     try {
       return await StorageManager.getTokens();
     } catch (e) {
-      console.error("Error getting tokens:", e);
+      if (debug_mode()) console.error("Error getting tokens:", e);
       return [];
     }
   }
@@ -172,7 +172,7 @@ class WalletService {
 
       tokens.push(token_address);
       StorageManager.saveTokens(tokens);
-      
+
       return { ...token_properties, state: true };
     } catch (e) {
       return { state: false };

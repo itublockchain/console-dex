@@ -1,8 +1,6 @@
-# İTÜ Blockchain Klübü Devs Komitesi 2. Proje
+# İTÜ Blockchain Kulübü Devs Komitesi 2. Proje
 
-**Not: Mevcut proje revize edilecek ve readme.md dosyası güncellenecektir. Aşağıda yazılanlar güncel değildir.**
-
-Blockchain ağı üzerindeki swap işlemlerini ve pool mekanizmalarını simüle eden konsol uygulaması.
+**Blockchain ağı üzerindeki swap işlemlerini ve pool mekanizmalarını kullanmamızı sağlayan bir konsol uygulaması.**
 
 ## Kurulum ve Çalıştırma
 
@@ -10,7 +8,7 @@ Blockchain ağı üzerindeki swap işlemlerini ve pool mekanizmalarını simüle
 git clone https://github.com/itu-blockchain/console-dex.git
 cd console-dex
 npm install
-npm run start link
+npm run link
 console-dex start
 ```
 
@@ -28,19 +26,18 @@ console-dex start
 
 ## Kullanılan Kütüphaneler:
 
-- chalk
+- viem
 - inquirer
-- crypto-js
+- chalk
+- commander
 - dotenv
-- firebase
+- aes256
 
 ---
 
-## Firebase Yapılandırması:
+## Koleksiyonlar:
 
-### Koleksiyonlar:
-
-#### 1. Wallets
+### 1. Wallets
 
 ```json
 [
@@ -54,6 +51,16 @@ console-dex start
 
 ## Katkıda Bulunanlar:
 
+### V1: NodeJS Simulation
+
 - [exTypen](https://github.com/exTypen)
 - [Meriç Cintosun](https://github.com/mericcintosun)
 - [AboveStars](https://github.com/aboveStars)
+
+---
+
+### V2: Backend Solidity (Güncel Repository)
+
+- [0xkutluer](https://github.com/batikankutluer)
+- [...](https://github.com/batikankutluer)
+- [...](https://github.com/batikankutluer)

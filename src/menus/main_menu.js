@@ -77,7 +77,7 @@ export default async function MainMenu() {
   ];
 
   // Display header
-  Header();
+  await Header();
 
   const { choice } = await inquirer.prompt([
     {

@@ -1,6 +1,7 @@
 import NetworkManager from "../../managers/NetworkManager.js";
 import AuthManager from "../../managers/AuthManager.js";
 import chalk from "chalk";
+import ErrorHandler from "../../managers/ErrorHandler.js";
 
 function Header() {
   // Get current network and wallet info
@@ -20,6 +21,15 @@ function Header() {
   console.log(chalk.dim("─".repeat(30)));
   console.log(`${chalk.blue("•")} Network: ${chalk.cyan(capitalizedNetwork)}`);
   console.log(`${chalk.blue("•")} Wallet:  ${chalk.cyan(currentWallet)}`);
+  if (!ErrorHandler.shadow) {
+    console.log(
+      chalk.red("\n•"),
+      chalk.red("Error!"),
+      chalk.yellow(`${ErrorHandler.error.name}:`),
+      chalk.redBright(ErrorHandler.error.message)
+    );
+    ErrorHandler.deleteError();
+  }
   console.log(chalk.dim("─".repeat(30)));
 }
 

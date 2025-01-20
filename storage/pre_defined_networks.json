@@ -1,12 +1,12 @@
-[
-  {
-    "name": "testnet",
-    "url": "http://127.0.0.1:8545"
-  },
-  {
-    "name": "sepolia",
-    "url": "https://ethereum-sepolia-rpc.publicnode.com"
-  },
+  [
+    {
+      "name": "testnet",
+      "url": "http://127.0.0.1:8545"
+    },
+    {
+      "name": "sepolia",
+      "url": "https://ethereum-sepolia-rpc.publicnode.com"
+    },
   {
     "name": "holesky",
     "url": "https://1rpc.io/holesky"

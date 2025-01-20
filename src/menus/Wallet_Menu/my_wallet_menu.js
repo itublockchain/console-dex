@@ -5,6 +5,7 @@ import WalletService from "../../services/wallet_service.js";
 import AuthManager from "../../managers/AuthManager.js";
 import ListTokensMenu from "./list_tokens_menu.js";
 import Header from "../Components/Header.js";
+import ErrorHandler from "../../managers/ErrorHandler.js";
 
 const MENU_ICONS = {
   ADD_WALLET: "➕",
@@ -184,11 +185,16 @@ async function handleAddWallet() {
     console.log(chalk.cyan("Address:"), chalk.white(wallet.address));
   } catch (error) {
     if (error.message === "Wallet with this address already exists") {
-      console.log(chalk.red("\n❌ This wallet has already been added"));
+      error.name = "PrivateKeyAlreadyExists";
+      ErrorHandler.setError(error);
     } else {
-      console.log(chalk.red("\n❌ Error adding wallet:", error.message));
+      error.name = "WalletPrivateKeyError";
+      ErrorHandler.setError(error);
     }
   }
+
+  console.clear();
+  Header();
 
   await inquirer.prompt([
     {
