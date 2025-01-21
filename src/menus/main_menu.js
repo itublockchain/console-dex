@@ -1,57 +1,125 @@
 import inquirer from "inquirer";
-import AuthManager from "../managers/auth_manager.js";
-import ItuScanMenu from "./ituscan_menu.js";
-import WalletMenu from "./wallet_menu.js";
-import PoolsMenu from "./pools_menu.js";
+import chalk from "chalk";
 
-async function MainMenu() {
-  if (AuthManager.isLoggedIn()) {
-    console.log("\nConnected Wallet: " + AuthManager.getCurrentWallet());
-  }else{
-    console.log("Wallet not connected")
+import AuthManager from "../managers/AuthManager.js";
+import NetworkManager from "../managers/NetworkManager.js";
+
+import PoolsMenu from "./Pool_Menu/pools_menu.js";
+import MyWalletMenu from "./Wallet_Menu/my_wallet_menu.js";
+import ChooseWalletMenu from "./Wallet_Menu/choose_wallet_menu.js";
+import SwitchNetworkMenu from "./Network_Menu/switch_network_menu.js";
+
+import Header from "./Components/Header.js";
+
+const MENU_ICONS = {
+  WALLET: "💼",
+  POOLS: "🏊",
+  NETWORK: "🌐",
+  EXIT: "🚪",
+  DISCONNECT: "🔌",
+  CONNECT: "🔗",
+};
+
+export default async function MainMenu() {
+  console.clear();
+
+  // Get current network and wallet info
+  const currentNetwork = NetworkManager.getCurrentNetwork();
+  const capitalizedNetwork =
+    currentNetwork.charAt(0).toUpperCase() + currentNetwork.slice(1);
+  const currentWallet = AuthManager.isLoggedIn()
+    ? AuthManager.getAddress().slice(0, 6) +
+      "..." +
+      AuthManager.getAddress().slice(-4)
+    : "Not Connected";
+
+  // Create sections for better organization
+  const mainSection = [
+    {
+      name: `${MENU_ICONS.POOLS} ${chalk.cyan("Pools")} ${chalk.gray(
+        "- Trade & Provide Liquidity"
+      )}`,
+      value: "POOLS",
+    },
+  ];
+
+  const walletSection = [
+    {
+      name: `${MENU_ICONS.WALLET} ${chalk.blue("Wallets")}`,
+      value: "WALLETS",
+    },
+  ];
+
+  if (!AuthManager.isLoggedIn()) {
+    walletSection.push({
+      name: `${MENU_ICONS.CONNECT} ${chalk.blue("Connect Wallet")}`,
+      value: "CONNECT_WALLET",
+    });
+  } else {
+    walletSection.push({
+      name: `${MENU_ICONS.DISCONNECT} ${chalk.yellow("Disconnect Wallet")}`,
+      value: "DISCONNECT",
+    });
   }
-  
-  console.log("----------------------------------------------------------------------------------------");
-  
-  const choices = [{ name: "My Balances", disabled: !AuthManager.isLoggedIn()}, "ITUScan", "Pools"];
 
-  AuthManager.isLoggedIn() ? choices.push("Disconnect") : choices.push("Initialize Wallet");
+  const networkSection = [
+    {
+      name: `${MENU_ICONS.NETWORK} ${chalk.green("Switch Network")}`,
+      value: "SWITCH_NETWORK",
+    },
+  ];
+
+  const exitSection = [
+    {
+      name: `${MENU_ICONS.EXIT} ${chalk.red("Exit")}`,
+      value: "EXIT",
+    },
+  ];
+
+  // Display header
+  await Header();
 
   const { choice } = await inquirer.prompt([
     {
       type: "list",
       name: "choice",
-      message: "Main Menu",
-      choices: choices
-    }
+      message: "", // Removed message for cleaner look
+      pageSize: 10,
+      choices: [
+        new inquirer.Separator(chalk.dim("═══ Main ═══")),
+        ...mainSection,
+        ...walletSection,
+        ...networkSection,
+        ...exitSection,
+      ],
+    },
   ]);
 
-  if (choice === "My Balances") {
-    await WalletMenu(AuthManager.getCurrentWallet());
-    await MainMenu();
-  }else if(choice === "ITUScan"){
-    await ItuScanMenu();
-    await MainMenu();
-  }else if(choice === "Pools"){
-    await PoolsMenu();
-    await MainMenu();
-  }else if (choice === "Initialize Wallet"){
-
-    const { phraseKey } = await inquirer.prompt([
-      {
-        type: "input",
-        name: "phraseKey",
-        message: "Enter your secret phrase:",
-      },
-    ]);
-
-    await AuthManager.login(phraseKey);
-    await MainMenu();
+  switch (choice) {
+    case "POOLS":
+      await PoolsMenu();
+      break;
+    case "CONNECT_WALLET":
+      await ChooseWalletMenu();
+      break;
+    case "INIT_WALLET":
+      await AddWalletMenu();
+      break;
+    case "WALLETS":
+      await MyWalletMenu();
+      break;
+    case "DISCONNECT":
+      await AuthManager.disconnect();
+      break;
+    case "SWITCH_NETWORK":
+      await SwitchNetworkMenu();
+      break;
+    case "EXIT":
+      console.log(
+        chalk.yellow("\nThank you for using Console DEX! Goodbye! 👋")
+      );
+      process.exit(0);
   }
-  else if(choice === "Disconnect"){
-    AuthManager.disconnect();
-    await MainMenu();
-  }
+
+  return await MainMenu();
 }
-
-export default MainMenu;
