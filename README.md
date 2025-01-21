@@ -35,20 +35,6 @@ console-dex start
 
 ---
 
-## Koleksiyonlar:
-
-### 1. Wallets
-
-```json
-[
-  {
-    "account": "0x1fF4D50Eb935E72Cfc906E5c502E81033822692d",
-    "public_key": "f79cd12b3b0141d1f72c6642f668474125719c2a1b399f4c48932ebfaa2e1384",
-    "encrypted_private_key": "9cd12b3b0141d1f72c6642f668474125719c2a1b399f4c48932ebfaa2e1384saf"
-  }
-]
-```
-
 ## Katkıda Bulunanlar:
 
 ### V1: NodeJS Simulation
@@ -62,5 +48,5 @@ console-dex start
 ### V2: Backend Solidity (Güncel Repository)
 
 - [0xkutluer](https://github.com/batikankutluer)
-- [...](https://github.com/batikankutluer)
-- [...](https://github.com/batikankutluer)
+- [cryptoxbee](https://github.com/cryptoxbee)
+- [elektrodeli](https://github.com/elektrodeli)
